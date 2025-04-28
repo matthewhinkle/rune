@@ -9,45 +9,32 @@
 
 #include "std.h"
 
-// ---------------
-// LIST definition
-// ---------------
+// ----
+// LIST
+// ----
 
-#ifndef T_NAME
-#define T_NAME T
-#define T_NAME_DEFAULTED
-#endif
+#ifndef RUNE_LIST_API
+#define RUNE_LIST_API
 
-#define LIST GLUE(list_, T_NAME)
+#define RUNE_LIST_TYPE(type) GLUE(list_, type)
+#define RUNE_LIST_OF(type) GLUE(RUNE_LIST_TYPE, _of)
 
-typedef struct LIST {
-    T * data;
-    size_t type_size;
-    size_t size;
-    size_t capacity;
-} LIST;
-
-#undef LIST
-
-#ifdef T_NAME_DEFAULTED
-#undef T_NAME
-#undef T_NAME_DEFAULTED
-#endif
-
-#ifndef LIST_API
-#define LIST_API
-
-#define list_of(type)                                                          \
-    {                                                                          \
-        .data = NULL,                                                          \
-        .type_size = sizeof(type),                                             \
-        .size = 0,                                                             \
-        .capacity = 0,                                                         \
-    }
+#define list(type, ...)                                                        \
+    ({                                                                         \
+        RUNE_LIST_TYPE(type)                                                   \
+        lst = {                                                                \
+            .data = NULL,                                                      \
+            .type_size = sizeof(type),                                         \
+            .size = 0,                                                         \
+            .capacity = 0,                                                     \
+        };                                                                     \
+        RUNE_LIST_OF(type)(&lst VA_ARGS(__VA_ARGS__), R_END);                  \
+        lst;                                                                   \
+    })
 
 #define list_free(lst)                                                         \
     FUNC({                                                                     \
-        if (lst != NULL) {                                                     \
+        if ((lst) != NULL) {                                                   \
             if ((lst)->data != NULL) {                                         \
                 r_free((lst)->data);                                           \
                 (lst)->data = NULL;                                            \
@@ -59,10 +46,14 @@ typedef struct LIST {
         }                                                                      \
     })
 
+#define list_get(lst, idx)                                                     \
+    RETURN(assert((lst) != NULL); assert((idx) < (lst)->size);                 \
+           (lst)->data[(idx)])
+
 #define list_resize(lst, new_capacity)                                         \
     FUNC({                                                                     \
         assert((lst) != NULL);                                                 \
-        assert(new_capacity >= (lst)->size);                                   \
+        assert((new_capacity) >= (lst)->size);                                 \
                                                                                \
         void * data = r_recalloc((lst)->data, new_capacity, (lst)->type_size); \
         (lst)->capacity = new_capacity;                                        \
@@ -71,9 +62,9 @@ typedef struct LIST {
 
 #define list_grow(lst)                                                         \
     FUNC({                                                                     \
-        if (lst->capacity <= 0) {                                              \
-            lst->capacity = 4;                                                 \
-            lst->data = r_calloc(lst->capacity, lst->type_size);               \
+        if ((lst)->capacity <= 0) {                                            \
+            (lst)->capacity = 4;                                               \
+            (lst)->data = r_calloc((lst)->capacity, (lst)->type_size);         \
         }                                                                      \
                                                                                \
         while ((lst)->size >= (lst)->capacity) {                               \
@@ -109,4 +100,33 @@ typedef struct LIST {
                                                                                \
         (lst)->data[(idx)] = (item);                                           \
     })
-#endif // LIST_API
+
+#endif // RUNE_LIST_API
+
+#ifdef T
+
+#define LIST RUNE_LIST_TYPE(T)
+typedef struct LIST {
+    T * data;
+    size_t type_size;
+    size_t size;
+    size_t capacity;
+} LIST;
+
+#define LIST_OF RUNE_LIST_OF(T)
+static void LIST_OF(LIST * lst, ...) {
+    assert(lst != NULL);
+
+    va_list args;
+    va_start(args, lst);
+    T value;
+    while ((value = va_arg(args, T)) != R_END) {
+        list_add(lst, value);
+    }
+    va_end(args);
+}
+#undef LIST_OF
+
+#undef LIST
+
+#endif // T

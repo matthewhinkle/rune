@@ -1,6 +1,6 @@
 Language: Cpp
 PointerAlignment: Middle
-AlwaysBreakAfterReturnType: All
+AlwaysBreakAfterReturnType: Automatic
 IndentWidth: 4
 UseTab: Never
 AlignTrailingComments: true
