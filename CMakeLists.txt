@@ -13,7 +13,10 @@ find_package(Vulkan REQUIRED)
 add_executable(rune main.c
         std.h
         std.c
-        collect.h)
+        coll.h
+        str.c
+        str.h
+)
 
 # Link SDL3 to the executable
 target_link_libraries(rune PRIVATE SDL3::SDL3 Vulkan::Vulkan)
