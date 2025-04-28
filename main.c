@@ -1,0 +1,147 @@
+#define T int
+#include "collect.h"
+#undef T
+
+#define T float
+#include "collect.h"
+#undef T
+
+#include <stdio.h>
+
+int
+main() {
+    printf("Hello World!\n");
+
+    {
+        list_int ints = list_of(int);
+
+        for (int i = 0; i < 10; i++) {
+            list_add(&ints, i);
+        }
+
+        int size = (int)ints.size * 10;
+        for (int i = 0; i < size; i++) {
+            list_insert(&ints, 4, 100 + i);
+        }
+
+        for (int i = 0; i < ints.size; i++) {
+            printf("ints.data[%d] = %d\n", i, ints.data[i]);
+        }
+
+        list_free(&ints);
+    }
+
+    {
+        list_float floats = list_of(float);
+
+        for (int i = 0; i < 10; i++) {
+            list_add(&floats, i);
+        }
+
+        size_t size = floats.size * 10;
+        for (int i = 0; i < size; i++) {
+            list_insert(&floats, 4, 100 + i);
+        }
+
+        for (int i = 0; i < floats.size; i++) {
+            printf("floats.data[%d] = %f\n", i, floats.data[i]);
+        }
+
+        list_free(&floats);
+    }
+
+    return 0;
+}
+
+#if 0
+
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_vulkan.h>
+#include <stdio.h>
+#include <vulkan/vulkan.h>
+
+int main(void) {
+    // Initialize SDL
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        printf("SDL_Init Error: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    if (SDL_Vulkan_LoadLibrary(NULL)) {
+        printf("SDL Vulkan support is available.\n");
+    } else {
+        printf("SDL Vulkan support is not available: %s\n", SDL_GetError());
+        SDL_Quit();
+        return 1;
+    }
+
+    // Create an SDL window with Vulkan support
+    SDL_Window *window = SDL_CreateWindow("Window", 800, 600, SDL_WINDOW_VULKAN);
+    if (!window) {
+        printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
+        SDL_Quit();
+        return 1;
+    }
+
+    // Create a Vulkan instance
+    VkInstance instance;
+    VkApplicationInfo appInfo = {
+        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+        .pApplicationName = "Vulkan + SDL3 Example",
+        .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
+        .pEngineName = "No Engine",
+        .engineVersion = VK_MAKE_VERSION(1, 0, 0),
+        .apiVersion = VK_API_VERSION_1_0,
+    };
+
+    VkInstanceCreateInfo createInfo = {
+        .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+        .pApplicationInfo = &appInfo,
+    };
+
+    if (vkCreateInstance(&createInfo, NULL, &instance) != VK_SUCCESS) {
+        printf("Failed to create Vulkan instance\n");
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+
+    printf("Vulkan and SDL3 initialized successfully!\n");
+
+    // Event loop to keep the window open
+    SDL_Event event;
+    int running = 1;
+    while (running) {
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_EVENT_QUIT) {
+                printf("EXITING!\n");
+                running = 0;
+            }
+        }
+    }
+
+    // Clean up
+    vkDestroyInstance(instance, NULL);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
+    return 0;
+}
+
+#endif
+
+#if 0
+#include <stdio.h>
+
+#include <SDL3/SDL.h>
+
+int main(void) {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        printf("SDL_Init Error: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    printf("Hello, World!\n");
+    return 0;
+}
+#endif
