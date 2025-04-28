@@ -1,54 +1,40 @@
+#include <stdarg.h>
+
 #define T int
-#include "collect.h"
+#include "coll.h"
 #undef T
 
-#define T float
-#include "collect.h"
-#undef T
+#include "str.h"
 
 #include <stdio.h>
 
-int
-main() {
+int main() {
     printf("Hello World!\n");
 
-    {
-        list_int ints = list_of(int);
+    const str foo = str_const("woah, some data and stuff.");
 
-        for (int i = 0; i < 10; i++) {
-            list_add(&ints, i);
-        }
+    printf("\"%s\"\n", foo.chars);
+    printf("len = %d\n", (int)foo.size);
 
-        int size = (int)ints.size * 10;
-        for (int i = 0; i < size; i++) {
-            list_insert(&ints, 4, 100 + i);
-        }
+    return 0;
 
-        for (int i = 0; i < ints.size; i++) {
-            printf("ints.data[%d] = %d\n", i, ints.data[i]);
-        }
+    // list_int ints = list(int);
+    list_int ints = list(int, 0, 1, 2, 3);
 
-        list_free(&ints);
+    // for (int i = 0; i < 10; i++) {
+    //     list_add(&ints, i);
+    // }
+
+    const int size = (int)(ints.size + 10) * 10;
+    for (int i = 0; i < size; i++) {
+        list_insert(&ints, 0, 100 + i);
     }
 
-    {
-        list_float floats = list_of(float);
-
-        for (int i = 0; i < 10; i++) {
-            list_add(&floats, i);
-        }
-
-        size_t size = floats.size * 10;
-        for (int i = 0; i < size; i++) {
-            list_insert(&floats, 4, 100 + i);
-        }
-
-        for (int i = 0; i < floats.size; i++) {
-            printf("floats.data[%d] = %f\n", i, floats.data[i]);
-        }
-
-        list_free(&floats);
+    for (int i = 0; i < ints.size; i++) {
+        printf("list_get(lst, %d) = %d\n", i, list_get(&ints, i));
     }
+
+    list_free(&ints);
 
     return 0;
 }
