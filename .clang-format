@@ -1,0 +1,6 @@
+Language: Cpp
+PointerAlignment: Middle
+AlwaysBreakAfterReturnType: All
+IndentWidth: 4
+UseTab: Never
+AlignTrailingComments: true
