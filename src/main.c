@@ -12,6 +12,13 @@
 
 #ifdef RUNE_CLI
 int main() {
+#if 1
+    list_int lst = list(int, 1, 2, 3, 4, 5);
+
+    for (int i = 0; i < lst.size; i++) {
+        printf("lst[%d] = %d\n", i, list_get(&lst, i));
+    }
+
     str foo = cstr("this");
     printf("foo = %s\n", foo.chars);
 
@@ -28,7 +35,7 @@ int main() {
 
     sfree(&foo);
     printf("foo = %s\n", foo.chars);
-
+#endif
     return 0;
 }
 #endif

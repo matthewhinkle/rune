@@ -20,6 +20,8 @@
 #define VA_ARGS(...) , ##__VA_ARGS__
 #define R_END 0x52554e45
 
+#define R_IS_PTR(type) _Generic((type), void *: 1, const void *: 1, default: 0)
+
 #define r_malloc_t(type) r_malloc(sizeof(type))
 #define r_calloc_t(n, type) r_calloc((n), sizeof(type))
 #define r_recalloc_t(ptr, n, type) r_recalloc(ptr, (n), sizeof(type))
