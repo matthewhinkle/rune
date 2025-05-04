@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.31)
 project(rune C)
 
-set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD 17)
 
 # Find SDL3 package
 find_package(SDL3 CONFIG REQUIRED)
