@@ -46,24 +46,6 @@
 
 #define list_type_size(lst) sizeof(typeof((lst)->data[0]))
 
-// #define list_get(lst, idx)                                                                         \
-//     ({                                                                                             \
-//         assert((lst) != NULL);                                                                     \
-//         _Generic(                                                                                  \
-//             (lst),                                                                                 \
-//             typeof(*(lst)): ({                                                                     \
-//                 assert((lst).data != NULL);                                                        \
-//                 assert((idx) < (lst).size);                                                        \
-//                 (lst).data[(idx)];                                                                 \
-//             }),                                                                                    \
-//             default: ({                                                                            \
-//                 assert((lst).data != NULL);                                                        \
-//                 assert((idx) < (lst).size);                                                        \
-//                 (lst).data[(idx)];                                                                 \
-//             })                                                                                     \
-//         );                                                                                         \
-//     })
-
 #define list_get(lst, idx)                                                                         \
     ({                                                                                             \
         assert((lst) != NULL);                                                                     \
