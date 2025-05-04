@@ -1,6 +1,16 @@
 Language: Cpp
+ColumnLimit: 100
 PointerAlignment: Middle
-AlwaysBreakAfterReturnType: Automatic
 IndentWidth: 4
 UseTab: Never
 AlignTrailingComments: true
+AlignAfterOpenBracket: BlockIndent
+BinPackArguments: false
+BinPackParameters: false
+AllowAllParametersOfDeclarationOnNextLine: true
+AllowAllConstructorInitializersOnNextLine: true
+ExperimentalAutoDetectBinPacking: true
+AllowShortFunctionsOnASingleLine: None
+PenaltyExcessCharacter: 20  # Higher penalty for exceeding limit
+PenaltyBreakBeforeFirstCallParameter: 50
+PenaltyReturnTypeOnItsOwnLine: 100
