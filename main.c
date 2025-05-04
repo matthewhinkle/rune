@@ -8,38 +8,32 @@
 
 #include <stdio.h>
 
+#define RUNE_CLI
+
+#ifdef RUNE_CLI
 int main() {
-    printf("Hello World!\n");
+    str foo = cstr("this");
+    printf("foo = %s\n", foo.chars);
 
-    const str foo = str_const("woah, some data and stuff.");
+    sadd(&foo, cstr(" a cool -str"));
+    printf("foo = %s\n", scstr(&foo));
 
-    printf("\"%s\"\n", foo.chars);
-    printf("len = %d\n", (int)foo.size);
+    sadd(&foo, " why \n\t\t\n\t\t { MORE COOL STUFF }");
+    printf("foo = %s\n", foo.chars);
+    sadd(&foo, " why \n\t\t\t\t ok now    that is just showing off");
+    printf("foo = %s\n", foo.chars);
 
-    return 0;
+    printf("beg = %c\n", *sfirst_s(&foo));
+    printf("end = %c\n", *(slast_s(&foo)));
 
-    // list_int ints = list(int);
-    list_int ints = list(int, 0, 1, 2, 3);
-
-    // for (int i = 0; i < 10; i++) {
-    //     list_add(&ints, i);
-    // }
-
-    const int size = (int)(ints.size + 10) * 10;
-    for (int i = 0; i < size; i++) {
-        list_insert(&ints, 0, 100 + i);
-    }
-
-    for (int i = 0; i < ints.size; i++) {
-        printf("list_get(lst, %d) = %d\n", i, list_get(&ints, i));
-    }
-
-    list_free(&ints);
+    sfree(&foo);
+    printf("foo = %s\n", foo.chars);
 
     return 0;
 }
+#endif
 
-#if 0
+#ifdef RUNE_GUI
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
@@ -62,7 +56,7 @@ int main(void) {
     }
 
     // Create an SDL window with Vulkan support
-    SDL_Window *window = SDL_CreateWindow("Window", 800, 600, SDL_WINDOW_VULKAN);
+    SDL_Window * window = SDL_CreateWindow("Window", 800, 600, SDL_WINDOW_VULKAN);
     if (!window) {
         printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
         SDL_Quit();
