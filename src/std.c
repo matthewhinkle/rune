@@ -1,6 +1,8 @@
-//
-// Created by Matt on 4/27/2025.
-//
+/*
+ * std module.
+ */
+
+#include "std.h"
 
 #include <assert.h>
 #include <stdlib.h>
@@ -30,8 +32,8 @@ extern void * r_realloc(void * ptr, const size_t new_size) {
 }
 
 extern void * r_free(void * ptr) {
-    if (ptr != NULL) {
+    if (ptr != nullptr) {
         free(ptr);
     }
-    return NULL;
+    return nullptr;
 }
