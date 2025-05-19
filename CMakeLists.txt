@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.31)
 project(rune C)
 
-set(CMAKE_C_STANDARD 17)
+set(CMAKE_C_STANDARD 23)
 
 # -----------
 # rune target
@@ -16,15 +16,16 @@ find_package(Vulkan REQUIRED)
 # Find CUnit
 find_package(unofficial-cunit CONFIG REQUIRED)
 
-# Add the executable
-add_executable(rune src/main.c
-        src/std.h
-        src/std.c
+set(RUNE_SRC
         src/coll.h
         src/str.c
         src/str.h
-        test/test.h
+        src/std.c
+        src/std.h
 )
+
+# Add the executable
+add_executable(rune src/main.c ${RUNE_SRC})
 
 # Link SDL3 and Vulkan libraries
 target_link_libraries(rune PRIVATE SDL3::SDL3 Vulkan::Vulkan)
@@ -34,13 +35,7 @@ target_link_libraries(rune PRIVATE SDL3::SDL3 Vulkan::Vulkan)
 # ----------------
 
 # Add the test executable
-add_executable(rune_test test/test_str.c
-        src/std.h
-        src/std.c
-        src/coll.h
-        src/str.c
-        src/str.h
-)
+add_executable(rune_test test/test_str.c ${RUNE_SRC})
 
 # Link CUnit library to the test executable
 target_link_libraries(rune_test PRIVATE unofficial::cunit::cunit)

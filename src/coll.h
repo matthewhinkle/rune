@@ -1,6 +1,21 @@
-//
-// Created by Matt on 4/27/2025.
-//
+/*
+ * Common collection implementations.
+ *
+ * Example usage:
+ *      #define T int
+ *      #include "coll.h"
+ *
+ *      typedef struct { int foo; int bar; } my_type;
+ *
+ *      #define T my_type
+ *      #include "coll.h"
+ *
+ *      int_list my_ints = list(int, 1, 2, 3, 4, 5);
+ *      my_type_list my_types = list(my_type, {1, 2}, {3, 4}, {5, 6});
+ *
+ * Supported #defines:
+ *      - `T` - the generic collection item type.
+ */
 
 // ReSharper disable once CppMissingIncludeGuard
 #include <assert.h>
@@ -16,18 +31,18 @@
 #ifndef RUNE_LIST_API
 #define RUNE_LIST_API
 
-#define RUNE_LIST_TYPE(type) GLUE(list_, type)
-#define RUNE_LIST_OF(type) GLUE(RUNE_LIST_TYPE(type), _of)
+#define R_LIST_TYPE(type) GLUE(list_, type)
+#define R_LIST_OF(type) GLUE(R_LIST_TYPE(type), _of)
 
 #define list(type, ...)                                                                            \
     ({                                                                                             \
-        RUNE_LIST_TYPE(type)                                                                       \
+        R_LIST_TYPE(type)                                                                          \
         lst = {                                                                                    \
             .data = NULL,                                                                          \
             .size = 0,                                                                             \
             .capacity = 0,                                                                         \
         };                                                                                         \
-        RUNE_LIST_OF(type)(&lst VA_ARGS(__VA_ARGS__), R_END);                                      \
+        R_LIST_OF(type)(&lst VA_ARGS(__VA_ARGS__), R_END);                                         \
         lst;                                                                                       \
     })
 
@@ -44,14 +59,15 @@
         }                                                                                          \
     })
 
-#define list_type_size(lst) sizeof(typeof((lst)->data[0]))
+#define list_type_size(lst) sizeof(typeof_unqual(*(lst)->data))
 
 #define list_get(lst, idx)                                                                         \
     ({                                                                                             \
         assert((lst) != NULL);                                                                     \
         assert((lst)->data != NULL);                                                               \
         assert((idx) < (lst)->size);                                                               \
-        (lst)->data[(idx)];                                                                        \
+        typeof_unqual(*(lst)->data) _result = (lst)->data[(idx)];                                  \
+        _result;                                                                                   \
     })
 
 #define list_resize(lst, new_capacity)                                                             \
@@ -110,7 +126,7 @@
         if (tail > 0) {                                                                            \
             void * dst = &((lst)->data)[(idx) + 1];                                                \
             void * src = &((lst)->data)[(idx)];                                                    \
-            memmove(dst, src, tail * sizeof(typeof(item)));                                        \
+            memmove(dst, src, tail * sizeof(typeof_unqual(item)));                                 \
         }                                                                                          \
                                                                                                    \
         (lst)->data[(idx)] = (item);                                                               \
@@ -122,7 +138,7 @@
         assert((lst)->data != NULL);                                                               \
         assert((idx) < (lst)->size);                                                               \
                                                                                                    \
-        const typeof((lst)->data[0]) removed = (lst)->data[(idx)];                                 \
+        typeof_unqual((lst)->data[0]) removed = (lst)->data[(idx)];                                \
                                                                                                    \
         const size_t tail = (lst)->size - (idx) - 1;                                               \
         if (tail > 0) {                                                                            \
@@ -141,14 +157,14 @@
 
 #ifdef T
 
-#define LIST RUNE_LIST_TYPE(T)
+#define LIST R_LIST_TYPE(T)
 typedef struct LIST {
     T * data;
     size_t size;
     size_t capacity;
 } LIST;
 
-#define LIST_OF RUNE_LIST_OF(T)
+#define LIST_OF R_LIST_OF(T)
 static void LIST_OF(LIST * lst, ...) {
     assert(lst != NULL);
 
@@ -173,19 +189,19 @@ static void LIST_OF(LIST * lst, ...) {
 #ifndef RUNE_LFQ_API
 #define RUNE_LFQ_API
 
-#define RUNE_LFQ_TYPE(type) GLUE(lfq_, type)
-#define RUNE_LFQ_OF(type) GLUE(RUNE_LFQ_TYPE(type), _of)
+#define R_LFQ_TYPE(type) GLUE(lfq_, type)
+#define R_LFQ_OF(type) GLUE(R_LFQ_TYPE(type), _of)
 
 #define lfq(type, cap, ...)                                                                        \
     ({                                                                                             \
-        RUNE_LFQ_TYPE(type)                                                                        \
+        R_LFQ_TYPE(type)                                                                           \
         q = {                                                                                      \
             .data = r_calloc_t(cap, type),                                                         \
             .capacity = (cap),                                                                     \
             .head = 0,                                                                             \
             .tail = 0,                                                                             \
         };                                                                                         \
-        RUNE_LFQ_OF(type)(&q VA_ARGS(__VA_ARGS__), R_END);                                         \
+        R_LFQ_OF(type)(&q VA_ARGS(__VA_ARGS__), R_END);                                            \
         q;                                                                                         \
     })
 
@@ -203,7 +219,7 @@ static void LIST_OF(LIST * lst, ...) {
         }                                                                                          \
     })
 
-#define lfq_type_size(q) sizeof(typeof((q)->data[0]))
+#define lfq_type_size(q) sizeof(typeof_unqual(*(q)->data))
 
 #define lfq_capacity(q) (q)->capacity
 
@@ -234,7 +250,7 @@ static void LIST_OF(LIST * lst, ...) {
                                                                                                    \
         const size_t head = atomic_load(&(q)->head);                                               \
                                                                                                    \
-        typeof((q)->data[0]) result = R_END;                                                       \
+        typeof_unqual((q)->data[0]) result = R_END;                                                \
         if (head != atomic_load(&(q)->tail)) {                                                     \
             result = (q)->data[head];                                                              \
         }                                                                                          \
@@ -256,7 +272,7 @@ static void LIST_OF(LIST * lst, ...) {
         const size_t tail = atomic_load(&(q)->tail);                                               \
         const size_t next_tail = (tail + 1) % (q)->capacity;                                       \
                                                                                                    \
-        typeof((q)->data[0]) result = item;                                                        \
+        typeof_unqual((q)->data[0]) result = item;                                                 \
         if (next_tail == atomic_load(&(q)->head)) {                                                \
             result = R_END;                                                                        \
         } else {                                                                                   \
@@ -272,7 +288,7 @@ static void LIST_OF(LIST * lst, ...) {
                                                                                                    \
         const size_t head = atomic_load(&(q)->head);                                               \
                                                                                                    \
-        typeof((q)->data[0]) item = R_END;                                                         \
+        typeof_unqual((q)->data[0]) item = R_END;                                                  \
         if (head != atomic_load(&(q)->tail)) {                                                     \
             item = (q)->data[head];                                                                \
             atomic_store(&(q)->head, (head + 1) % (q)->capacity);                                  \
@@ -309,7 +325,7 @@ static void LIST_OF(LIST * lst, ...) {
 
 #ifdef T
 
-#define LFQ RUNE_LFQ_TYPE(T)
+#define LFQ R_LFQ_TYPE(T)
 
 #ifdef _Atomic
 #define R_Atomic(type) _Atomic(type)
@@ -324,7 +340,7 @@ typedef struct LFQ {
     R_Atomic(size_t) tail;
 } LFQ;
 
-#define LFQ_OF RUNE_LFQ_OF(T)
+#define LFQ_OF R_LFQ_OF(T)
 static void LFQ_OF(LFQ * q, ...) {
     assert(q != NULL);
 

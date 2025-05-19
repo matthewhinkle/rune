@@ -1,109 +1,77 @@
-//
-// Created by Matt on 4/27/2025.
-//
+/*
+ * C string wrapper.
+ *
+ * All `const char *` data returned by this API are compatible with standard C string usage (ex: the
+ * <string.h> functions) unless otherwise stated.
+ */
 
 #ifndef RUNE_STR_H
 #define RUNE_STR_H
 
-#include <stddef.h>
-
 #include "std.h"
 
-typedef struct str {
-    const char * lit;
-    char * chars;
-    size_t size;
-} str;
+/**
+ * Optionally override the max string size.
+ */
+#ifdef RUNE_CFG__STR_MAX_SIZE
+static const size_t RUNE_STR_MAX_SIZE = RUNE_CFG__STR_MAX_SIZE;
+#else
+static const size_t RUNE_STR_MAX_SIZE = 4 * 1024; // 4 KiB
+#endif
 
-#define cstr(chars)                                                                                \
-    _Generic((chars), char *: strc, const char *: strc, str *: strs, const str *: strs)(chars)
+/**
+ * Optionally override the max strings supported by `str_cat()`.
+ */
+#ifdef RUNE_CFG__STR_MAX_CAT
+static const size_t RUNE_STR_MAX_CAT = RUNE_CFG__STR_MAX_CAT;
+#else
+static const size_t RUNE_STR_MAX_CAT = 1024;
+#endif
 
-#define cnstr(chars, size)                                                                         \
-    _Generic((chars), char *: snlit, const char *: strcn, str *: strsn, const str *: strsn)(       \
-        chars, size                                                                                \
-    )
+/**
+ * Initialize a string from an arbitrary char array. The max size of the string may be optionally
+ * provided, otherwise, `RUNE_STR_MAX_SIZE` will be used.
+ *
+ * @param data the string data.
+ * @param ... [optional] max size.
+ * @return a copy of the string compatible with the `str_*` functions; must be freed with `str_free()`.
+ */
+#define str(data, ...) RUNE(str)((data)VA_ARGS(__VA_ARGS__), RUNE_STR_MAX_SIZE)
+extern const char * RUNE(str)(const char * data, ...);
 
-#define slen(chars)                                                                                \
-    _Generic((chars), char *: slen_c, const char *: slen_c, str *: slen_s, const str *: slen_s)(   \
-        chars                                                                                      \
-    )
+/**
+ * Check if the string is a valid `str` string. The max size of the string to check may be
+ * optionally provided, otherwise, `RUNE_STR_MAX_SIZE` will be used.
+ *
+ * @param data a C string.
+ * @param ... [optional] max size.
+ * @return `true` if the string is a valid `str` string, `false` otherwise.
+ */
+#define str_is(data, ...) RUNE(str_is)(data VA_ARGS(__VA_ARGS__), RUNE_STR_MAX_SIZE)
+extern bool RUNE(str_is)(const char * data, ...);
 
-#define snlen(chars, size)                                                                           \
-    _Generic((chars), char *: snlen_c, const char *: snlen_c, str *: snlen_s, const str *: snlen_s)( \
-        chars, size                                                                                  \
-    )
+/**
+ * Free the string data returned by `str()`. Additionally, supports freeing any C string. It is safe
+ * to call this function with `nullptr`. Always returns `nullptr` to allow for chaining.
+ *
+ * @param data the string data to free.
+ * @return `nullptr`.
+ */
+extern void * str_free(const char * data);
 
-#define sfirst(chars)                                                                                    \
-    _Generic((chars), char *: sfirst_c, const char *: sfirst_c, str *: sfirst_s, const str *: sfirst_s)( \
-        chars                                                                                            \
-    )
+#define str_len(data, ...) RUNE(str_len)(data VA_ARGS(__VA_ARGS__), RUNE_STR_MAX_SIZE)
+extern size_t RUNE(str_len)(const char * data, ...);
 
-#define slast(chars)                                                                                 \
-    _Generic((chars), char *: slast_c, const char *: slast_c, str *: slast_s, const str *: slast_s)( \
-        chars                                                                                        \
-    )
+#define str_size(data, ...) RUNE(str_size)(data VA_ARGS(__VA_ARGS__), RUNE_STR_MAX_SIZE)
+extern size_t RUNE(str_size)(const char * data, ...);
 
-#define snlast(chars)                                                                                    \
-    _Generic((chars), char *: snlast_c, const char *: snlast_c, str *: snlast_s, const str *: snlast_s)( \
-        chars                                                                                            \
-    )
+#define str_cat(...) RUNE(str_cat)(__VA_ARGS__, nullptr, RUNE_STR_MAX_SIZE)
+extern const char * RUNE(str_cat)(const char * first, ...);
 
-#define sadd(s, chars)                                                                                                                                     \
-    _Generic((chars), char *: r_sadd_c, const char *: r_sadd_c, str *: r_sadd_s, const str *: r_sadd_s, struct str: r_sadd_v, const struct str: r_sadd_v)( \
-        s, chars                                                                                                                                           \
-    )
+#define str_cmp(a, b, ...) RUNE(str_cmp)((a), (b)VA_ARGS(__VA_ARGS__), RUNE_STR_MAX_SIZE)
+extern int RUNE(str_cmp)(const char * a, const char * b, ...);
 
-extern str slit(const char * chars);
-extern str strc(const char * chars);
-extern str strs(const str * s);
-
-extern str snlit(const char * chars, size_t size);
-extern str strcn(const char * chars, size_t size);
-extern str strsn(const str * s);
-
-extern void sfree(str * s);
-
-extern const char * scstr(const str * s);
-
-extern size_t slen_c(const char * chars);
-extern size_t slen_s(const str * s);
-
-extern size_t snlen_c(const char * chars, size_t max_size);
-extern size_t snlen_s(const str * s, size_t max_size);
-
-extern const char * sfirst_c(const char * chars);
-extern const char * sfirst_s(const str * s);
-
-extern const char * slast_c(const char * chars);
-extern const char * slast_s(const str * s);
-
-extern const char * snlast_c(const char * chars);
-extern const char * snlast_s(const str * s);
-
-extern str * ssub_s(const char * restrict s, size_t start, size_t end);
-
-extern str * r_sadd_c(str * restrict s, const char * restrict chars);
-extern str * r_sadd_s(str * restrict s, const str * restrict other);
-extern str * r_sadd_v(str * restrict s, str other);
-
-extern str * r_snadd_c(str * restrict s, const char * restrict chars, size_t size);
-extern str * r_snadd_s(str * restrict s, const str * restrict other);
-extern str * r_snadd_v(str * restrict s, str other);
-
-extern str * r_srem_c(str * restrict s, const char * restrict chars);
-extern str * r_srem_s(str * restrict s, const str * restrict other);
-extern str * r_srem_v(str * restrict s, str other);
-
-extern str * r_snrem_c(str * restrict s, const char * restrict chars, size_t size);
-extern str * r_snrem_s(str * restrict s, const str * restrict other);
-extern str * r_snrem_v(str * restrict s, str other);
-
-extern ssize_t r_sidx_c(const str * restrict s, const char * restrict chars, size_t start);
-extern ssize_t r_sidx_s(const str * restrict s, const str * restrict other, size_t start);
-extern ssize_t r_sidx_v(const str * restrict s, str other, size_t start);
-
-extern ssize_t r_sridx_c(const str * restrict s, const char * restrict chars, size_t rstart);
-extern ssize_t r_sridx_s(const str * restrict s, const str * restrict other, size_t rstart);
-extern ssize_t r_sridx_v(const str * restrict s, str other, size_t rstart);
+#define str_sub(data, ...) RUNE(str_sub)((data)VA_ARGS(__VA_ARGS__), -1, -1)
+extern const char * RUNE(str_sub)(const char * data, ssize_t start, ssize_t n, ...);
 
 #endif // RUNE_STR_H
