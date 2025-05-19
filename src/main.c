@@ -1,46 +1,76 @@
+#if defined(__cplusplus)
+#error "This file must be compiled as C, not C++"
+#endif // no cpp assert
+
 #include <stdarg.h>
+
+#include "std.h"
+#include "str.h"
+
+#include <stdio.h>
+#include <string.h>
 
 #define T int
 #include "coll.h"
 #undef T
 
-#include "str.h"
-
-#include <stdio.h>
-
 #define RUNE_CLI
 
 #ifdef RUNE_CLI
 int main() {
-#if 1
     list_int lst = list(int, 1, 2, 3, 4, 5);
+    list_add(&lst, 17);
 
     for (int i = 0; i < lst.size; i++) {
         printf("lst[%d] = %d\n", i, list_get(&lst, i));
     }
 
-    str foo = cstr("this");
-    printf("foo = %s\n", foo.chars);
+    const char * my_str = "foobar in a car";
 
-    sadd(&foo, cstr(" a cool -str"));
-    printf("foo = %s\n", scstr(&foo));
+    const char * s = str(my_str);
+    printf("%s\n", s);
 
-    sadd(&foo, " why \n\t\t\n\t\t { MORE COOL STUFF }");
-    printf("foo = %s\n", foo.chars);
-    sadd(&foo, " why \n\t\t\t\t ok now    that is just showing off");
-    printf("foo = %s\n", foo.chars);
+    printf("is_str [%s] = %d\n", my_str, str_is(my_str));
+    printf("is_str [%s] = %d\n", s, str_is(s));
 
-    printf("beg = %c\n", *sfirst_s(&foo));
-    printf("end = %c\n", *(slast_s(&foo)));
+    printf("strlen [%s] = %zu vs %zu\n", s, strlen(s), str_len(s));
+    printf("\"%s\" vs \"%s\"\n", s, s);
+    printf("eq == %d\n", s == s);
 
-    sfree(&foo);
-    printf("foo = %s\n", foo.chars);
-#endif
+    printf(
+        "%s\n",
+        str_cat(str("hello, "), str("world"), "!!!\nit hand", "les all the ", " . ", str("STRINGS!"))
+    );
+
+    const char * a = "0123456789";
+    const char * b = "abcdefghij";
+
+    printf("a = %s\n", a);
+    printf("b = %s\n", b);
+    // printf("strcmp(a, b) = %d\n", strcmp(a, b));
+    printf("str_cmp(a, b) = %d\n", str_cmp(a, b));
+
+    for (int i = 0; i < 11; i++) {
+        for (int j = 0; j < 11; j++) {
+            const char * data = str_sub(a);
+            printf("str_sub(a, b) = %s\n", data);
+        }
+    }
+
+    str_free(s);
+
     return 0;
 }
 #endif
 
 #ifdef RUNE_GUI
+#if 0
+list_int lst = list(int, 1, 2, 3, 4, 5);
+
+for (int i = 0; i < lst.size; i++) {
+    printf("lst[%d] = %d\n", i, list_get(&lst, i));
+}
+#endif
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_vulkan.h>
