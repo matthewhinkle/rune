@@ -31,20 +31,10 @@
 #ifndef RUNE_LIST_API
 #define RUNE_LIST_API
 
-#define R_LIST_TYPE(type) GLUE(list_, type)
-#define R_LIST_OF(type) GLUE(R_LIST_TYPE(type), _of)
+#define LIST(type) GLUE(list_, type)
+#define R_LIST_OF(type) GLUE(LIST(type), _of)
 
-#define list(type, ...)                                                                            \
-    ({                                                                                             \
-        R_LIST_TYPE(type)                                                                          \
-        lst = {                                                                                    \
-            .data = NULL,                                                                          \
-            .size = 0,                                                                             \
-            .capacity = 0,                                                                         \
-        };                                                                                         \
-        R_LIST_OF(type)(&lst VA_ARGS(__VA_ARGS__), R_END);                                         \
-        lst;                                                                                       \
-    })
+#define list(type, ...) R_LIST_OF(type)(__VA_ARGS__, R_END)
 
 #define list_free(lst)                                                                             \
     FUNC({                                                                                         \
@@ -157,28 +147,31 @@
 
 #ifdef T
 
-#define LIST R_LIST_TYPE(T)
-typedef struct LIST {
+typedef struct {
     T * data;
     size_t size;
     size_t capacity;
-} LIST;
+} LIST(T);
 
-#define LIST_OF R_LIST_OF(T)
-static void LIST_OF(LIST * lst, ...) {
-    assert(lst != NULL);
+static LIST(T) R_LIST_OF(T)(const T first, ...) {
+    LIST(T)
+    lst = {
+        .data = nullptr,
+        .size = 0,
+        .capacity = 0,
+    };
 
     va_list args;
-    va_start(args, lst);
-    T value;
-    while ((value = va_arg(args, T)) != R_END) {
-        list_add(lst, value);
+    va_start(args, first);
+    T next = first;
+    while (next != R_END) {
+        list_add(&lst, next);
+        next = va_arg(args, T);
     }
     va_end(args);
-}
-#undef LIST_OF
 
-#undef LIST
+    return lst;
+}
 
 #endif // T
 
@@ -189,12 +182,12 @@ static void LIST_OF(LIST * lst, ...) {
 #ifndef RUNE_LFQ_API
 #define RUNE_LFQ_API
 
-#define R_LFQ_TYPE(type) GLUE(lfq_, type)
-#define R_LFQ_OF(type) GLUE(R_LFQ_TYPE(type), _of)
+#define LFQ(type) GLUE(lfq_, type)
+#define R_LFQ_OF(type) GLUE(LFQ(type), _of)
 
 #define lfq(type, cap, ...)                                                                        \
     ({                                                                                             \
-        R_LFQ_TYPE(type)                                                                           \
+        LFQ(type)                                                                                  \
         q = {                                                                                      \
             .data = r_calloc_t(cap, type),                                                         \
             .capacity = (cap),                                                                     \
@@ -325,23 +318,20 @@ static void LIST_OF(LIST * lst, ...) {
 
 #ifdef T
 
-#define LFQ R_LFQ_TYPE(T)
-
 #ifdef _Atomic
 #define R_Atomic(type) _Atomic(type)
 #else
 #define R_Atomic(type) type
 #endif
 
-typedef struct LFQ {
+typedef struct {
     T * data;
     size_t capacity;
     R_Atomic(size_t) head;
     R_Atomic(size_t) tail;
-} LFQ;
+} LFQ(T);
 
-#define LFQ_OF R_LFQ_OF(T)
-static void LFQ_OF(LFQ * q, ...) {
+static void R_LFQ_OF(T)(LFQ(T) * q, ...) {
     assert(q != NULL);
 
     va_list args;
@@ -352,8 +342,5 @@ static void LFQ_OF(LFQ * q, ...) {
     }
     va_end(args);
 }
-#undef LFQ_OF
-
-#undef LFQ
 
 #endif // T

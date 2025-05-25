@@ -7,10 +7,12 @@ AlignTrailingComments: true
 AlignAfterOpenBracket: BlockIndent
 BinPackArguments: false
 BinPackParameters: false
-AllowAllParametersOfDeclarationOnNextLine: true
-AllowAllConstructorInitializersOnNextLine: true
-ExperimentalAutoDetectBinPacking: true
+AllowAllArgumentsOnNextLine: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AllowAllConstructorInitializersOnNextLine: false
+ExperimentalAutoDetectBinPacking: false
 AllowShortFunctionsOnASingleLine: None
+AllowShortBlocksOnASingleLine: Never
 PenaltyExcessCharacter: 20  # Higher penalty for exceeding limit
 PenaltyBreakBeforeFirstCallParameter: 50
 PenaltyReturnTypeOnItsOwnLine: 100
