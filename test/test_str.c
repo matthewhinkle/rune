@@ -13,88 +13,108 @@
 static const char * HELLO = "hello";
 static const size_t HELLO_LEN = 5;
 
+static uint64_t fnv1a_hash(const char * data) {
+    uint64_t hash = 0xCBF29CE484222325ULL; // FNV_OFFSET_BASIS
+    for (size_t i = 0; i < strlen(data); ++i) {
+        hash ^= (uint8_t)data[i];
+        hash *= 0x100000001B3ULL; // FNV_PRIME
+    }
+    return hash;
+}
+
+// ---------------
+// empty str tests
+// ---------------
+
 static void str__for_nullptr__should_return__nullptr() {
     CU_ASSERT_PTR_NULL(str(nullptr));
 }
 
 static void str__for_empty_cstr__should_return__nonnull() {
-    const char * s = str("");
+    char * s = str("");
     CU_ASSERT_PTR_NOT_NULL(s);
     str_free(s);
 }
 
 static void str__for_empty_cstr__should_return__first_byte_of_cstr_data() {
-    const char * s = str("");
+    char * s = str("");
     CU_ASSERT_STRING_EQUAL(s, "");
     str_free(s);
 }
 
 static void str__for_empty_cstr__should_return__empty_cstr() {
-    const char * s = str("");
+    char * s = str("");
     CU_ASSERT_EQUAL(strlen(s), 0);
     str_free(s);
 }
 
 static void str__for_empty_cstr__should_return__cstr_with_nullterm() {
-    const char * s = str("");
+    char * s = str("");
     CU_ASSERT_EQUAL(s[0], NULLTERM);
     str_free(s);
 }
 
-static void str__for_empty_cstr__should_return__cstr_within_buffer_starting_with_SOH() {
-    const char * s = str("");
-
-    // SOH | metadata | STX | c string ...
-    const size_t header_size = 1 + sizeof(uint64_t) + 1;
-    CU_ASSERT_EQUAL(*(s - header_size), 0x01); // SOH - "start of header"
-
+static void str__for_empty_cstr__should_return__valid_rstr() {
+    char * s = str("");
+    CU_ASSERT(str_is(s));
     str_free(s);
 }
 
-static void str__for_empty_cstr__should_return__cstr_within_buffer_with_empty_size() {
-    const char * s = str("");
-
-    //  ... | metadata | STX | c string ...
-    const size_t size_loc = sizeof(uint64_t) + 1;
-    uint64_t val = 0;
-    memcpy(&val, s - size_loc, sizeof(uint64_t));
-
-    // size should be exactly 1, representing only the null term
-    CU_ASSERT_EQUAL(val, 1);
-
+static void str__for_empty_cstr__should_return__rstr_with_zero_len() {
+    char * s = str("");
+    CU_ASSERT_EQUAL(str_len(s), 0);
     str_free(s);
 }
 
-static void str__for_empty_cstr__should_return__cstr_within_buffer_after_STX() {
-    const char * s = str("");
-
-    //  ... | STX | c string ...
-    CU_ASSERT_EQUAL(*(s - 1), 0x02); // STX - "start of text"
-
+static void str__for_empty_cstr__should_return__rstr_with_fnv1a_offset_basis() {
+    char * s = str("");
+    CU_ASSERT_EQUAL(str_hash(s), 0xCBF29CE484222325); // FNV_OFFSET_BASIS
     str_free(s);
 }
+
+// ----------------------
+// non-empty string tests
+// ----------------------
 
 static void str__for_nonempty_cstr__should_return__nonnull() {
-    const char * s = str(HELLO);
+    char * s = str(HELLO);
     CU_ASSERT_PTR_NOT_NULL(s);
     str_free(s);
 }
 
 static void str__for_nonempty_cstr__should_return__first_byte_of_cstr_data() {
-    const char * s = str(HELLO);
+    char * s = str(HELLO);
     CU_ASSERT_STRING_EQUAL(s, HELLO);
     str_free(s);
 }
 
 static void str__for_nonempty_cstr__should_return__cstr_with_same_len_as_input() {
-    const char * s = str(HELLO);
+    char * s = str(HELLO);
     CU_ASSERT_EQUAL(strlen(s), HELLO_LEN);
     str_free(s);
 }
 
 static void str__for_nonempty_cstr__should_return__cstr_with_nullterm() {
-    const char * s = str(HELLO);
+    char * s = str(HELLO);
     CU_ASSERT_EQUAL(s[HELLO_LEN], NULLTERM);
+    str_free(s);
+}
+
+static void str__for_nonempty_cstr__should_return__valid_rstr() {
+    char * s = str(HELLO);
+    CU_ASSERT(str_is(s));
+    str_free(s);
+}
+
+static void str__for_nonempty_cstr__should_return__rstr_with_str_len() {
+    char * s = str(HELLO);
+    CU_ASSERT_EQUAL(str_len(s), HELLO_LEN);
+    str_free(s);
+}
+
+static void str__for_nonempty_cstr__should_return__rstr_with_fnv1a_hash() {
+    char * s = str(HELLO);
+    CU_ASSERT_EQUAL(str_hash(s), fnv1a_hash(HELLO));
     str_free(s);
 }
 
@@ -116,14 +136,17 @@ int main() {
     ADD_TEST(suite, str__for_empty_cstr__should_return__first_byte_of_cstr_data);
     ADD_TEST(suite, str__for_empty_cstr__should_return__empty_cstr);
     ADD_TEST(suite, str__for_empty_cstr__should_return__cstr_with_nullterm);
-    ADD_TEST(suite, str__for_empty_cstr__should_return__cstr_within_buffer_starting_with_SOH);
-    ADD_TEST(suite, str__for_empty_cstr__should_return__cstr_within_buffer_with_empty_size);
-    ADD_TEST(suite, str__for_empty_cstr__should_return__cstr_within_buffer_after_STX);
+    ADD_TEST(suite, str__for_empty_cstr__should_return__valid_rstr);
+    ADD_TEST(suite, str__for_empty_cstr__should_return__rstr_with_zero_len);
+    ADD_TEST(suite, str__for_empty_cstr__should_return__rstr_with_fnv1a_offset_basis);
 
     ADD_TEST(suite, str__for_nonempty_cstr__should_return__nonnull);
     ADD_TEST(suite, str__for_nonempty_cstr__should_return__first_byte_of_cstr_data);
     ADD_TEST(suite, str__for_nonempty_cstr__should_return__cstr_with_same_len_as_input);
     ADD_TEST(suite, str__for_nonempty_cstr__should_return__cstr_with_nullterm);
+    ADD_TEST(suite, str__for_nonempty_cstr__should_return__valid_rstr);
+    ADD_TEST(suite, str__for_nonempty_cstr__should_return__rstr_with_str_len);
+    ADD_TEST(suite, str__for_nonempty_cstr__should_return__rstr_with_fnv1a_hash);
 
     CU_basic_set_mode(CU_BRM_VERBOSE);
     CU_basic_run_tests();
@@ -132,5 +155,5 @@ int main() {
 }
 
 #ifdef RUN_TESTS
-    #undef RUN_TESTS
+#undef RUN_TESTS
 #endif // RUN_TESTS
