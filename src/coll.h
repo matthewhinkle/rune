@@ -2,16 +2,18 @@
  * Common collection implementations.
  *
  * Example usage:
- *      #define T int
- *      #include "coll.h"
+ * ```c
+ * #define T int
+ * #include "coll.h"
  *
- *      typedef struct { int foo; int bar; } my_type;
+ * typedef struct { int foo; int bar; } my_type;
  *
- *      #define T my_type
- *      #include "coll.h"
+ * #define T my_type
+ * #include "coll.h"
  *
- *      int_list my_ints = list(int, 1, 2, 3, 4, 5);
- *      my_type_list my_types = list(my_type, {1, 2}, {3, 4}, {5, 6});
+ * int_list my_ints = list(int, 1, 2, 3, 4, 5);
+ * my_type_list my_types = list(my_type, {1, 2}, {3, 4}, {5, 6});
+ * ```
  *
  * Supported #defines:
  *      - `T` - the generic collection item type.
@@ -23,6 +25,17 @@
 #include <stdlib.h>
 
 #include "std.h"
+
+// -----
+// array
+// -----
+
+#ifndef RUNE_ARRAY_API
+#define RUNE_ARRAY_API
+
+struct RUNE(array) {};
+
+#endif // RUNE_ARRAY_API
 
 // ----
 // list
@@ -56,8 +69,7 @@
         assert((lst) != NULL);                                                                     \
         assert((lst)->data != NULL);                                                               \
         assert((idx) < (lst)->size);                                                               \
-        typeof_unqual(*(lst)->data) _result = (lst)->data[(idx)];                                  \
-        _result;                                                                                   \
+        (lst)->data[(idx)];                                                                        \
     })
 
 #define list_resize(lst, new_capacity)                                                             \
@@ -128,7 +140,7 @@
         assert((lst)->data != NULL);                                                               \
         assert((idx) < (lst)->size);                                                               \
                                                                                                    \
-        typeof_unqual((lst)->data[0]) removed = (lst)->data[(idx)];                                \
+        auto removed = (lst)->data[(idx)];                                                         \
                                                                                                    \
         const size_t tail = (lst)->size - (idx) - 1;                                               \
         if (tail > 0) {                                                                            \
