@@ -21,6 +21,14 @@
 
 #ifdef RUNE_CLI
 int main() {
+    char * upper_str = str("HELLO, WORLD! from matt");
+    printf("lower_str = %s\n", upper_str);
+    str_lower(upper_str);
+    printf("lower_str = %s\n", upper_str);
+    str_free(upper_str);
+
+    printf("what happens here = %s\n", str_lower(str("HELLO, world!")));
+
     char * s = str("0, 1, 2, 3, 4, 5, 6, 7, 8, 9");
     char ** strings = str_split(s, ", ");
 
@@ -28,9 +36,9 @@ int main() {
     size_t i = 0;
     while (next != nullptr) {
         printf("next = %s\n", next);
+        str_free(next);
         i++;
         next = strings[i];
-        str_free(next);
     }
     free(strings);
 
@@ -47,6 +55,14 @@ int main() {
     char * cat = str_cat("foo", "bar", "baz");
     printf("cat = %s\n", cat);
     str_free(cat);
+
+    LIST(int) lst = list(int, 1, 2, 3, 4, 5);
+
+    list_insert(&lst, 1, 17);
+    for (int i_list = 0; i_list < lst.size; i_list++) {
+        printf("lst[%d] = %d\n", i_list, list_get(&lst, i_list));
+    }
+    list_free(&lst);
 
     return 0;
 }

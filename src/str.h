@@ -277,6 +277,33 @@ extern char *
 extern char * RUNE(str_join_varg)(const char * delim, size_t max_len, ...);
 
 /**
+ * Repeat a string a specified number of times. The max size of the string to create may be
+ * optionally provided, otherwise, `RUNE_STR_MAX_LEN` will be used.
+ *
+ * Example using default `max_len`:
+ * ```c
+ * char * repeated = str_repeat("hello", 3);
+ * ...
+ * str_free(repeated);
+ * ```
+ *
+ * Example using custom `max_len`:
+ * ```c
+ * char * repeated = str_repeat("hello", 3, 20);
+ * ...
+ * str_free(repeated);
+ * ```
+ *
+ * @param str the string to repeat.
+ * @param n the number of times to repeat the string.
+ * @param max_len [optional] the max size of the string to create.
+ * @return a new string with the repeated content; must be freed with `str_free()`.
+ */
+#define str_repeat(str, n, ...) RUNE(str_repeat)((str), (n)VA_ARGS(__VA_ARGS__), RUNE_STR_MAX_LEN)
+[[nodiscard]]
+extern char * RUNE(str_repeat)(const char * str, size_t n, size_t max_len, ...);
+
+/**
  * Replace all occurrences of a substring in a string with another substring. The max size of the
  * string to create may be optionally provided, otherwise, `RUNE_STR_MAX_LEN` will be used.
  *
@@ -375,6 +402,148 @@ extern char **
 // --------------------------
 // mutating string operations
 // --------------------------
+
+/**
+ * Capitalize the first non-blank character in-place. The max size of the string to convert may be
+ * optionally provided, otherwise, `RUNE_STR_MAX_LEN` will be used.
+ *
+ * Example using default `max_len`:
+ * ```c
+ * char * s = str("Hello, World");
+ * char * capped = str_capitalize(s);
+ * ...
+ * // `str_capitalize()` modifies the string in-place, only `s` or `capped` needs to be freed.
+ * str_free(s);
+ * ```
+ *
+ * Example using custom `max_len`:
+ * ```c
+ * char * s = str("Hello, World");
+ * char * capped = str_capitalize(s, 20);
+ * ...
+ * // `str_lower()` modifies the string in-place, only `s` or `capped` needs to be freed.
+ * str_free(s);
+ * ```
+ *
+ * @param str the string to convert to lowercase.
+ * @param max_len [optional] the max size of the string to convert.
+ * @return modified `str`.
+ */
+#define str_capitalize(str, ...) RUNE(str_capitalize)((str), __VA_ARGS__)
+extern char * RUNE(str_capitalize)(char * str, size_t max_len, ...);
+
+/**
+ * Convert a string to lowercase in-place. The max size of the string to convert may be optionally
+ * provided, otherwise, `RUNE_STR_MAX_LEN` will be used.
+ *
+ * `str` is mutated in-place, this function does not allocate additional memory for the result.
+ *
+ * Example using default `max_len`:
+ * ```c
+ * char * s = str("Hello World");
+ * char * lower = str_lower(s);
+ * ...
+ * // `str_lower()` modifies the string in-place, only `s` or `lower` needs to be freed.
+ * str_free(s);
+ * ```
+ *
+ * Example using custom `max_len`:
+ * ```c
+ * char * s = str("Hello World");
+ * char * lower = str_lower("Hello World", 20);
+ * ...
+ * // `str_lower()` modifies the string in-place, only `s` or `lower` needs to be freed.
+ * str_free(s);
+ * ```
+ *
+ * @param str the string to convert to lowercase.
+ * @param max_len [optional] the max size of the string to convert.
+ * @return `str` modified with all characters converted to lowercase.
+ */
+#define str_lower(str, ...) RUNE(str_lower)((str)VA_ARGS(__VA_ARGS__), RUNE_STR_MAX_LEN)
+extern char * RUNE(str_lower)(char * str, size_t max_len, ...);
+
+/**
+ * Convert a string to uppercase in-place. The max size of the string to convert may be optionally
+ * provided, otherwise, `RUNE_STR_MAX_LEN` will be used.
+ *
+ * Example using default `max_len`:
+ * ```c
+ * char * s = str("Hello World");
+ * char * upper = str_upper(s);
+ * ...
+ * // `str_upper()` modifies the string in-place, only `s` or `upper` needs to be freed.
+ * str_free(s);
+ * ```
+ *
+ * Example using custom `max_len`:
+ * ```c
+ * char * s = str("Hello World");
+ * char * upper = str_upper(s, 20);
+ * ...
+ * // `str_upper()` modifies the string in-place, only `s` or `upper` needs to be freed.
+ * str_free(upper);
+ * ```
+ *
+ * @param str the string to convert to uppercase.
+ * @param max_len [optional] the max size of the string to convert.
+ * @return a new string with all characters converted to uppercase; must be freed with `str_free()`.
+ */
+#define str_upper(str, ...) RUNE(str_upper)((str)VA_ARGS(__VA_ARGS__), RUNE_STR_MAX_LEN)
+extern char * RUNE(str_upper)(char * str, size_t max_len, ...);
+
+/**
+ * Reverse a string in place. The max size of the string to reverse may be optionally provided,
+ * otherwise, `RUNE_STR_MAX_LEN` will be used.
+ *
+ * Example using default `max_len`:
+ * ```c
+ * char * reversed = str_reverse("Hello World");
+ * ...
+ * str_free(reversed);
+ * ```
+ *
+ * Example using custom `max_len`:
+ * ```c
+ * char * reversed = str_reverse("Hello World", 20);
+ * ...
+ * str_free(reversed);
+ * ```
+ *
+ * @param str the string to reverse.
+ * @param max_len [optional] the max size of the string to reverse.
+ * @return a new string with the characters reversed; must be freed with `str_free()`.
+ */
+#define str_reverse(str, ...) RUNE(str_reverse)((str), __VA_ARGS__, RUNE_STR_MAX_LEN)
+extern char * RUNE(str_reverse)(char * str, size_t max_len, ...);
+
+/**
+ * Pad a string with a character to a specified length. The max size of the string to pad may be
+ * optionally provided, otherwise, `RUNE_STR_MAX_LEN` will be used.
+ *
+ * Example using default `max_len`:
+ * ```c
+ * char * padded = str_pad("Hello", '*', true, 10);
+ * ...
+ * str_free(padded);
+ * ```
+ *
+ * Example using custom `max_len`:
+ * ```c
+ * char * padded = str_pad("Hello", '*', true, 20);
+ * ...
+ * str_free(padded);
+ * ```
+ *
+ * @param str the string to pad.
+ * @param pad_char the character to use for padding.
+ * @param left_pad if `true`, pads on the left; if `false`, pads on the right.
+ * @param max_len [optional] the max size of the string to pad.
+ * @return a new string with padding applied; must be freed with `str_free()`.
+ */
+#define str_pad(str, len, ...)                                                                     \
+    RUNE(str_pad)((str), (len)VA_ARGS(__VA_ARGS__), ' ', true, RUNE_STR_MAX_LEN)
+extern char * RUNE(str_pad)(char * str, size_t len, char pad_char, bool left, size_t max_len, ...);
 
 /**
  * Trim blankspace from both ends of a string. The max size of the string to trim may be optionally
