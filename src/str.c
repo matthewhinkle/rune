@@ -792,6 +792,30 @@ extern const char * RUNE(str_rfind)(const char * str, const char * key, const si
     return result;
 }
 
+extern char * RUNE(str_repeat)(const char * str, const size_t n, const size_t max_len, ...) {
+    // 1 - null check
+    if (str == nullptr || n == 0) {
+        return nullptr;
+    }
+
+    // 2 - get the length of the string
+    const size_t len = str_len(str, max_len);
+    if (len == 0 || n > max_len / len) {
+        return nullptr; // cannot repeat more than max_len / len times
+    }
+
+    // 3 - allocate the result buffer
+    const struct rstr * result = rstr_new(nullptr, len * n, str_hash(str, max_len));
+
+    // 4 - copy the string `n` times into the result buffer
+    for (size_t i = 0; i < n; i++) {
+        memcpy(result->data + i * len, str, len);
+    }
+    result->data[len * n] = NULLTERM; // null-terminate the string
+
+    return result->data;
+}
+
 extern char * RUNE(str_replace)(
     const char * str,
     const char * target,
@@ -879,7 +903,7 @@ char ** RUNE(str_split)(
     return result_alloc;
 }
 
-extern char * RUNE(str_trim)(char * str, const size_t max_len, const bool realloc, ...) {
+extern char * RUNE(str_capitalize)(char * str, const size_t max_len, ...) {
     if (str == nullptr) {
         return nullptr;
     }
@@ -887,6 +911,156 @@ extern char * RUNE(str_trim)(char * str, const size_t max_len, const bool reallo
     const size_t len = str_len(str, max_len);
     if (len == 0) {
         return str;
+    }
+
+    bool capped = false;
+
+    unsigned long long hash = fnv1a_start();
+    for (size_t i = 0; i < len; i++) {
+        if (!capped && !isspace((unsigned char)str[i])) {
+            str[i] = (char)(unsigned char)toupper(str[i]);
+            capped = true; // first non-space character is capitalized
+        }
+        hash = fnv1a_next(hash, str[i]);
+    }
+
+    struct rstr * r = rstr(str);
+    if (r->data != nullptr) {
+        r->hash = hash;
+    }
+    return str;
+}
+
+extern char * RUNE(str_lower)(char * str, const size_t max_len, ...) {
+    if (str == nullptr) {
+        return nullptr;
+    }
+
+    const size_t len = str_len(str, max_len);
+    if (len == 0) {
+        return str;
+    }
+
+    unsigned long long hash = fnv1a_start();
+    for (size_t i = 0; i < len; i++) {
+        str[i] = (char)(unsigned char)tolower(str[i]);
+        hash = fnv1a_next(hash, str[i]);
+    }
+
+    struct rstr * r = rstr(str);
+    if (r != nullptr) {
+        r->hash = hash;
+    }
+    return str;
+}
+
+extern char * RUNE(str_upper)(char * str, const size_t max_len, ...) {
+    if (str == nullptr) {
+        return nullptr;
+    }
+
+    const size_t len = str_len(str, max_len);
+    if (len == 0) {
+        return str;
+    }
+
+    unsigned long long hash = fnv1a_start();
+    for (size_t i = 0; i < len; i++) {
+        str[i] = (char)(unsigned char)toupper(str[i]);
+        hash = fnv1a_next(hash, str[i]);
+    }
+
+    struct rstr * r = rstr(str);
+    if (r != nullptr) {
+        r->hash = hash;
+    }
+    return str;
+}
+
+extern char * RUNE(str_reverse)(char * str, const size_t max_len, ...) {
+    if (str == nullptr) {
+        return nullptr;
+    }
+
+    const size_t len = str_len(str, max_len);
+    if (len == 0) {
+        return nullptr;
+    }
+
+    const size_t halflen = len >> 1;
+    unsigned long long hash = fnv1a_start();
+    for (size_t i = 0; i < halflen; i++) {
+        const size_t j = len - i - 1;
+        const char tmp = str[i];
+        str[i] = str[j];
+        str[j] = tmp;
+
+        hash = fnv1a_next(hash, str[i]);
+        hash = fnv1a_next(hash, str[j]);
+    }
+
+    if (len % 2 != 0) {
+        hash = fnv1a_next(hash, str[halflen]);
+    }
+
+    struct rstr * r = rstr(str);
+    if (r != nullptr) {
+        r->hash = hash;
+    }
+    return str;
+}
+
+char * RUNE(str_pad)(
+    char * str,
+    const size_t len,
+    const char pad_char,
+    const bool left,
+    const size_t max_len,
+    ...
+) {
+
+    if (str == nullptr) {
+        return nullptr;
+    }
+
+    size_t str_len_val = str_len(str, max_len);
+    if (str_len_val >= len)
+        return str; // No padding needed
+
+    size_t pad_size = len - str_len_val;
+    if (pad_size > max_len - str_len_val)
+        return nullptr; // Exceeds max
+
+    struct rstr * r = rstr(str);
+    if (r == nullptr) {
+        r = rstr_of(str, max_len);
+        if (r == nullptr)
+            return nullptr;
+    }
+
+    r = rstr_resize(r, len, 0, true);
+
+    if (left) {
+        memmove(r->data + pad_size, r->data, str_len_val + 1);
+        memset(r->data, pad_char, pad_size);
+    } else {
+        memset(r->data + str_len_val, pad_char, pad_size);
+        r->data[len] = NULLTERM;
+    }
+
+    r->len = len;
+    r->hash = fnv1a_hash(r->data, len);
+    return r->data;
+}
+
+extern char * RUNE(str_trim)(char * str, const size_t max_len, const bool realloc, ...) {
+    if (str == nullptr) {
+        return nullptr;
+    }
+
+    const size_t len = str_len(str, max_len);
+    if (len == 0) {
+        return nullptr;
     }
 
     size_t start = len;
@@ -919,8 +1093,8 @@ extern char * RUNE(str_trim)(char * str, const size_t max_len, const bool reallo
             r = rstr_of(str, max_len);
         }
 
-        memmove(str, str + start, new_len);
-        str[new_len] = NULLTERM;
+        memmove(r->data, str + start, new_len);
+        r->data[new_len] = NULLTERM;
 
         r = rstr_resize(r, new_len, hash, realloc);
         return r->data;
