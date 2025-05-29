@@ -24,8 +24,8 @@ static const size_t RUNE_STR_MAX_LEN = 4 * 1024; // 4 KiB
  */
 #ifdef RUNE_CFG__STR_STACK_MAX_LEN
 static const size_t RUNE_STR_STACK_MAX_LEN = RUNE_CFG__STR_STACK_MAX_LEN;
-#else  // default to 4 KiB
-static const size_t RUNE_STR_STACK_MAX_LEN = 4 * 1024; // 4 KiB
+#else  // default to 8 KiB
+static const size_t RUNE_STR_STACK_MAX_LEN = 8 * 1024; // 8 KiB
 #endif // RUNE_CFG__STR_STACK_MAX_LEN
 
 /**
@@ -66,6 +66,36 @@ static const size_t RUNE_STR_MAX_VARG = 1024;
 #define str(data, ...) RUNE(str)((data)VA_ARGS(__VA_ARGS__), RUNE_STR_MAX_LEN)
 [[nodiscard]]
 extern char * RUNE(str)(const char * data, size_t max_len, ...);
+
+/**
+ * Format a string similar to `printf` with multiple format arguments. The max size of the string
+ * may be optionally provided as the first argument, otherwise, `RUNE_STR_MAX_LEN` will be used.
+ *
+ * Example using default `max_len`:
+ * ```c
+ * char * formatted = strf("Hello, %s! %d", "World", 42);
+ * ...
+ * str_free(formatted);
+ * ```
+ *
+ * Example using custom `max_len`:
+ * ```c
+ * char * formatted = strf(100, "Hello, %s! %d", "World", 42);
+ * ...
+ * str_free(formatted);
+ * ```
+ *
+ * @param arg the first argument, which can be a format string or a size_t for max length.
+ * @param ... additional arguments for formatting.
+ * @return a new formatted string; must be freed with `str_free()`.
+ */
+#define strf(arg, ...)                                                                             \
+    _Generic(                                                                                      \
+        (arg),                                                                                     \
+        GENERIC_INTS(RUNE(strf)((size_t)(arg)VA_ARGS(__VA_ARGS__))),                               \
+        default: RUNE(strf)((RUNE_STR_MAX_LEN), (const char *)(arg)VA_ARGS(__VA_ARGS__))           \
+    )
+extern char * RUNE(strf)(size_t max_len, const char * fmt, ...);
 
 /**
  * Free the string data returned by `str()`. Additionally, supports freeing any C string. It is safe
@@ -141,10 +171,9 @@ extern size_t RUNE(str_size)(const char * str, size_t max_len, ...);
  */
 #define str_cat(first, ...)                                                                        \
     _Generic(                                                                                      \
-        &*(first),                                                                                 \
-        char *: RUNE(str_cat)((RUNE_STR_MAX_LEN), (first)VA_ARGS(__VA_ARGS__), nullptr),           \
-        const char *: RUNE(str_cat)((RUNE_STR_MAX_LEN), (first)VA_ARGS(__VA_ARGS__), nullptr),     \
-        default: RUNE(str_cat)((size_t)(first)VA_ARGS(__VA_ARGS__), nullptr)                       \
+        (first),                                                                                   \
+        GENERIC_INTS(RUNE(str_cat)((size_t)(first)VA_ARGS(__VA_ARGS__), nullptr)),                 \
+        default: RUNE(str_cat)((RUNE_STR_MAX_LEN), (first)VA_ARGS(__VA_ARGS__), nullptr)           \
     )
 [[nodiscard]]
 extern char * RUNE(str_cat)(size_t max_len, const char * first, ...);
