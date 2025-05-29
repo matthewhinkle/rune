@@ -7,6 +7,7 @@
 
 #include <ctype.h>
 #include <stdarg.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -61,7 +62,7 @@ static unsigned long long fnv1a_mix(const unsigned long long hash1, const unsign
  */
 static unsigned long long fnv1a_hash(const char * data, const size_t max_len) {
     unsigned long long hash = fnv1a_start();
-    for (unsigned long long i = 0; i < max_len && data[i] != NULLTERM; ++i) {
+    for (unsigned long long i = 0; i < max_len && data[i] != NULLTERM; i++) {
         hash = fnv1a_next(hash, (unsigned char)data[i]);
     }
     return hash;
@@ -462,6 +463,34 @@ static size_t rstr_split(
 extern char * RUNE(str)(const char * data, const size_t max_len, ...) {
     const struct rstr * r = rstr_of(data, max_len);
     return r == nullptr ? nullptr : r->data;
+}
+
+extern char * RUNE(strf)(const size_t max_len, const char * fmt, ...) {
+    if (max_len < RUNE_STR_STACK_MAX_LEN) {
+        va_list args;
+        va_start(args, fmt);
+        char tmp[max_len + 1]; // +1 for null terminator
+        const int n = vsnprintf(tmp, max_len + 1, fmt, args);
+        va_end(args);
+
+        if (n < 0 || (size_t)n > max_len) {
+            return nullptr; // error or too long
+        }
+        return RUNE(str)(tmp, max_len);
+    }
+
+    va_list args;
+    va_start(args, fmt);
+    char * tmp = r_calloc_t(max_len + 1, char);
+    const int n = vsnprintf(tmp, max_len + 1, fmt, args);
+    va_end(args);
+
+    char * result = nullptr;
+    if (n >= 0 && (size_t)n < max_len) {
+        result = RUNE(str)(tmp, max_len);
+    }
+    free(tmp);
+    return result;
 }
 
 extern bool RUNE(str_is)(const char * data, const size_t max_len, ... /* size */) {

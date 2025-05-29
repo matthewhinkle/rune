@@ -27,6 +27,21 @@
 #define VA_ARGS(...) , ##__VA_ARGS__
 #define R_END 0x52554e45
 
+// clang-format off
+#define GENERIC_INTS(expr)                                                                         \
+    signed char: expr,                                                                             \
+    char: expr,                                                                                    \
+    short: expr,                                                                                   \
+    int: expr,                                                                                     \
+    long: expr,                                                                                    \
+    long long: expr,                                                                               \
+    unsigned char: expr,                                                                           \
+    unsigned short: expr,                                                                          \
+    unsigned int: expr,                                                                            \
+    unsigned long : expr,                                                                          \
+    unsigned long long : expr
+// clang-format on
+
 #define r_malloc_t(type) r_malloc(sizeof(type))
 #define r_calloc_t(n, type) r_calloc((n), sizeof(type))
 #define r_recalloc_t(ptr, n, type) r_recalloc(ptr, (n), sizeof(type))

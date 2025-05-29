@@ -11,8 +11,8 @@
  * #define T my_type
  * #include "coll.h"
  *
- * int_list my_ints = list(int, 1, 2, 3, 4, 5);
- * my_type_list my_types = list(my_type, {1, 2}, {3, 4}, {5, 6});
+ * LIST(int) my_ints = list(int, 1, 2, 3, 4, 5);
+ * LIST(my_type) my_types = list(my_type, {1, 2}, {3, 4}, {5, 6});
  * ```
  *
  * Supported #defines:
@@ -33,8 +33,6 @@
 #ifndef RUNE_ARRAY_API
 #define RUNE_ARRAY_API
 
-struct RUNE(array) {};
-
 #endif // RUNE_ARRAY_API
 
 // ----
@@ -51,10 +49,10 @@ struct RUNE(array) {};
 
 #define list_free(lst)                                                                             \
     FUNC({                                                                                         \
-        if ((lst) != NULL) {                                                                       \
-            if ((lst)->data != NULL) {                                                             \
+        if ((lst) != nullptr) {                                                                    \
+            if ((lst)->data != nullptr) {                                                          \
                 r_free((lst)->data);                                                               \
-                (lst)->data = NULL;                                                                \
+                (lst)->data = nullptr;                                                             \
             }                                                                                      \
                                                                                                    \
             (lst)->size = 0;                                                                       \
@@ -66,16 +64,16 @@ struct RUNE(array) {};
 
 #define list_get(lst, idx)                                                                         \
     ({                                                                                             \
-        assert((lst) != NULL);                                                                     \
-        assert((lst)->data != NULL);                                                               \
+        assert((lst) != nullptr);                                                                  \
+        assert((lst)->data != nullptr);                                                            \
         assert((idx) < (lst)->size);                                                               \
         (lst)->data[(idx)];                                                                        \
     })
 
 #define list_resize(lst, new_capacity)                                                             \
     FUNC({                                                                                         \
-        assert((lst) != NULL);                                                                     \
-        assert((lst)->data != NULL);                                                               \
+        assert((lst) != nullptr);                                                                  \
+        assert((lst)->data != nullptr);                                                            \
         assert((new_capacity) >= (lst)->size);                                                     \
                                                                                                    \
         void * data = r_recalloc((lst)->data, new_capacity, list_type_size(lst));                  \
@@ -97,7 +95,7 @@ struct RUNE(array) {};
 
 #define list_shrink(lst)                                                                           \
     FUNC({                                                                                         \
-        assert((lst) != NULL);                                                                     \
+        assert((lst) != nullptr);                                                                  \
                                                                                                    \
         while ((lst)->size < (lst)->capacity >> 2) {                                               \
             list_resize((lst), (lst)->capacity >> 1);                                              \
@@ -106,7 +104,7 @@ struct RUNE(array) {};
 
 #define list_add(lst, item)                                                                        \
     FUNC({                                                                                         \
-        assert((lst) != NULL);                                                                     \
+        assert((lst) != nullptr);                                                                  \
                                                                                                    \
         const size_t idx = (lst)->size;                                                            \
         (lst)->size++;                                                                             \
@@ -117,8 +115,8 @@ struct RUNE(array) {};
 
 #define list_insert(lst, idx, item)                                                                \
     FUNC({                                                                                         \
-        assert((lst) != NULL);                                                                     \
-        assert((lst)->data != NULL);                                                               \
+        assert((lst) != nullptr);                                                                  \
+        assert((lst)->data != nullptr);                                                            \
         assert((idx) <= (lst)->size);                                                              \
                                                                                                    \
         (lst)->size++;                                                                             \
@@ -136,8 +134,8 @@ struct RUNE(array) {};
 
 #define list_remove(lst, idx)                                                                      \
     ({                                                                                             \
-        assert((lst) != NULL);                                                                     \
-        assert((lst)->data != NULL);                                                               \
+        assert((lst) != nullptr);                                                                  \
+        assert((lst)->data != nullptr);                                                            \
         assert((idx) < (lst)->size);                                                               \
                                                                                                    \
         auto removed = (lst)->data[(idx)];                                                         \
@@ -197,25 +195,14 @@ static LIST(T) R_LIST_OF(T)(const T first, ...) {
 #define LFQ(type) GLUE(lfq_, type)
 #define R_LFQ_OF(type) GLUE(LFQ(type), _of)
 
-#define lfq(type, cap, ...)                                                                        \
-    ({                                                                                             \
-        LFQ(type)                                                                                  \
-        q = {                                                                                      \
-            .data = r_calloc_t(cap, type),                                                         \
-            .capacity = (cap),                                                                     \
-            .head = 0,                                                                             \
-            .tail = 0,                                                                             \
-        };                                                                                         \
-        R_LFQ_OF(type)(&q VA_ARGS(__VA_ARGS__), R_END);                                            \
-        q;                                                                                         \
-    })
+#define lfq(type, cap, ...) R_LFQ_OF(type)((cap)VA_ARGS(__VA_ARGS__), R_END)
 
 #define lfq_free(q)                                                                                \
     FUNC({                                                                                         \
-        if ((q) != NULL) {                                                                         \
-            if ((q)->data != NULL) {                                                               \
+        if ((q) != nullptr) {                                                                      \
+            if ((q)->data != nullptr) {                                                            \
                 r_free((q)->data);                                                                 \
-                (q)->data = NULL;                                                                  \
+                (q)->data = nullptr;                                                               \
             }                                                                                      \
                                                                                                    \
             (q)->capacity = 0;                                                                     \
@@ -230,32 +217,32 @@ static LIST(T) R_LIST_OF(T)(const T first, ...) {
 
 #define lfq_depth(q)                                                                               \
     ({                                                                                             \
-        assert((q) != NULL);                                                                       \
+        assert((q) != nullptr);                                                                    \
                                                                                                    \
         (atomic_load(&(q)->tail) - atomic_load(&(q)->head)) % (q)->capacity;                       \
     })
 
 #define lfq_empty(q)                                                                               \
     ({                                                                                             \
-        assert((q) != NULL);                                                                       \
+        assert((q) != nullptr);                                                                    \
                                                                                                    \
         atomic_load(&(q)->head) == atomic_load(&(q)->tail);                                        \
     })
 
 #define lfq_full(q)                                                                                \
     ({                                                                                             \
-        assert((q) != NULL);                                                                       \
+        assert((q) != nullptr);                                                                    \
                                                                                                    \
         (atomic_load(&(q)->tail) + 1) % (q)->capacity == atomic_load(&(q)->head);                  \
     })
 
 #define lfq_peek(q)                                                                                \
     ({                                                                                             \
-        assert((q) != NULL);                                                                       \
+        assert((q) != nullptr);                                                                    \
                                                                                                    \
         const size_t head = atomic_load(&(q)->head);                                               \
                                                                                                    \
-        typeof_unqual((q)->data[0]) result = R_END;                                                \
+        auto result = R_END;                                                                       \
         if (head != atomic_load(&(q)->tail)) {                                                     \
             result = (q)->data[head];                                                              \
         }                                                                                          \
@@ -264,7 +251,7 @@ static LIST(T) R_LIST_OF(T)(const T first, ...) {
 
 #define lfq_clear(q)                                                                               \
     FUNC({                                                                                         \
-        assert((q) != NULL);                                                                       \
+        assert((q) != nullptr);                                                                    \
                                                                                                    \
         atomic_store(&(q)->head, 0);                                                               \
         atomic_store(&(q)->tail, 0);                                                               \
@@ -272,12 +259,12 @@ static LIST(T) R_LIST_OF(T)(const T first, ...) {
 
 #define lfq_push(q, item)                                                                          \
     FUNC({                                                                                         \
-        assert((q) != NULL);                                                                       \
+        assert((q) != nullptr);                                                                    \
                                                                                                    \
         const size_t tail = atomic_load(&(q)->tail);                                               \
         const size_t next_tail = (tail + 1) % (q)->capacity;                                       \
                                                                                                    \
-        typeof_unqual((q)->data[0]) result = item;                                                 \
+        auto result = item;                                                                        \
         if (next_tail == atomic_load(&(q)->head)) {                                                \
             result = R_END;                                                                        \
         } else {                                                                                   \
@@ -289,11 +276,11 @@ static LIST(T) R_LIST_OF(T)(const T first, ...) {
 
 #define lfq_pop(q)                                                                                 \
     ({                                                                                             \
-        assert((q) != NULL);                                                                       \
+        assert((q) != nullptr);                                                                    \
                                                                                                    \
         const size_t head = atomic_load(&(q)->head);                                               \
                                                                                                    \
-        typeof_unqual((q)->data[0]) item = R_END;                                                  \
+        auto item = R_END;                                                                         \
         if (head != atomic_load(&(q)->tail)) {                                                     \
             item = (q)->data[head];                                                                \
             atomic_store(&(q)->head, (head + 1) % (q)->capacity);                                  \
@@ -303,7 +290,7 @@ static LIST(T) R_LIST_OF(T)(const T first, ...) {
 
 #define lfq_resize(q, new_capacity)                                                                \
     FUNC({                                                                                         \
-        assert((q) != NULL);                                                                       \
+        assert((q) != nullptr);                                                                    \
         assert((new_capacity) >= (q)->capacity);                                                   \
                                                                                                    \
         const size_t old_capacity = (q)->capacity;                                                 \
@@ -332,9 +319,9 @@ static LIST(T) R_LIST_OF(T)(const T first, ...) {
 
 #ifdef _Atomic
 #define R_Atomic(type) _Atomic(type)
-#else
+#else // Fallback to a simple type if _Atomic is not available
 #define R_Atomic(type) type
-#endif
+#endif // _Atomic
 
 typedef struct {
     T * data;
@@ -343,16 +330,24 @@ typedef struct {
     R_Atomic(size_t) tail;
 } LFQ(T);
 
-static void R_LFQ_OF(T)(LFQ(T) * q, ...) {
-    assert(q != NULL);
+static LFQ(T) R_LFQ_OF(T)(const size_t capacity, ...) {
+    LFQ(T)
+    q = {
+        .data = r_calloc_t(capacity, T),
+        .capacity = capacity,
+        .head = 0,
+        .tail = 0,
+    };
 
     va_list args;
-    va_start(args, q);
+    va_start(args, capacity);
     T value;
     while ((value = va_arg(args, T)) != R_END) {
-        lfq_push(q, value);
+        lfq_push(&q, value);
     }
     va_end(args);
+
+    return q;
 }
 
 #endif // T

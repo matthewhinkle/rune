@@ -21,6 +21,19 @@
 
 #ifdef RUNE_CLI
 int main() {
+    printf("HELLO\n");
+
+    printf("strf = %s\n", strf("Hello, %s! %d %d", "World", 42, 1000));
+
+    LFQ(int) q = lfq(int, 100, 2, 3, 4, 5);
+
+    int n = lfq_depth(&q);
+
+    for (int i = 0; i < n; i++) {
+        printf("peek = %d\n", lfq_peek(&q));
+        printf("q[%d] = %d\n", i, lfq_pop(&q));
+    }
+
     char * upper_str = str("HELLO, WORLD! from matt");
     printf("lower_str = %s\n", upper_str);
     str_lower(upper_str);
