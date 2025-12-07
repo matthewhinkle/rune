@@ -1,1194 +1,690 @@
 /*
- * str module.
+ * Core string module implementation.
  */
 
 #include "str.h"
-#include "std.h"
 
-#include <ctype.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
-// --------------
-// string hashing
-// --------------
+// =================================================================================================
+// Internal: FNV-1a hashing
+// =================================================================================================
 
-/**
- * FNV-1a hash function implementation.
- * This is a non-cryptographic hash function suitable for strings.
- * It is fast and has a good distribution of hash values.
- *
- * @return the base hash value.
- */
-static unsigned long long fnv1a_start() {
-    return 0xCBF29CE484222325ULL; // FNV_OFFSET_BASIS
+static uint64_t fnv1a_start(void) {
+    return 0xCBF29CE484222325ULL;
 }
 
-/**
- * FNV-1a hash function next step.
- * This function takes the current hash and the next byte of data,
- * and returns the updated hash value.
- *
- * @param hash the current hash value.
- * @param next_byte the next byte of data to hash.
- * @return the updated hash value.
- */
-static unsigned long long fnv1a_next(const unsigned long long hash, const unsigned char next_byte) {
-    return (hash ^ next_byte) * 0x100000001B3ULL; // FNV_PRIME
+static uint64_t fnv1a_next(uint64_t hash, uint8_t byte) {
+    return (hash ^ byte) * 0x100000001B3ULL;
 }
 
-/**
- * FNV-1a hash function mix step.
- * This function takes two hash values and combines them into a single hash value.
- *
- * @param hash1 the first hash value.
- * @param hash2 the second hash value.
- * @return the combined hash value.
- */
-static unsigned long long fnv1a_mix(const unsigned long long hash1, const unsigned long long hash2) {
-    return (hash1 ^ hash2) * 0x100000001B3ULL; // FNV_PRIME
+static uint64_t fnv1a_mix(uint64_t h1, uint64_t h2) {
+    return (h1 ^ h2) * 0x100000001B3ULL;
 }
 
-/**
- * FNV-1a hash function for a string.
- * This function takes a string and its maximum length,
- * and returns the hash value of the string.
- *
- * @param data the string to hash.
- * @param max_len the maximum length of the string.
- * @return the hash value of the string.
- */
-static unsigned long long fnv1a_hash(const char * data, const size_t max_len) {
-    unsigned long long hash = fnv1a_start();
-    for (unsigned long long i = 0; i < max_len && data[i] != NULLTERM; i++) {
-        hash = fnv1a_next(hash, (unsigned char)data[i]);
+static uint64_t fnv1a_hash(const char * data, size_t max_len) {
+    uint64_t hash = fnv1a_start();
+    for (size_t i = 0; i < max_len && data[i] != NULLTERM; i++) {
+        hash = fnv1a_next(hash, (uint8_t)data[i]);
     }
     return hash;
 }
 
-// -------------------
-// internal string api
-// -------------------
+// =================================================================================================
+// Internal: Managed string structure
+// =================================================================================================
 
-static const char SOH = 0x01; // "start of header": first byte of the "rune string"
-static const char STX = 0x02; // "start of text": separator byte between header and C string data
-static const char ETX = 0x03; // "end of text": final byte of the "rune string"
+static constexpr char SOH = 0x01; // start of header
+static constexpr char STX = 0x02; // start of text
+static constexpr char ETX = 0x03; // end of text
 
-/**
- * Internal representation of a "rune string".
- * This structure is used to store strings with additional metadata,
- * such as length, capacity, and hash.
- *
- * The structure is designed to be allocated in a single block of memory,
- * with the string data immediately following the metadata.
- */
-struct rstr {
+typedef struct {
     char soh;
     size_t len;
     size_t cap;
-    unsigned long long hash;
+    uint64_t hash;
     char stx;
-    char * data;
-    char etx;
-};
+    char data[];
+} rstr;
 
-/**
- * Check if the given data pointer points to a valid "rune string".
- * A valid "rune string" starts with SOH, followed by STX, and ends with ETX.
- *
- * @param data the pointer to the string data.
- * @return a pointer to the "rune string" structure if valid, or nullptr if invalid.
- */
-[[nodiscard]]
-static struct rstr * rstr(const char * data) {
-    if (data == nullptr) {
+// Get rstr from data pointer, or nullptr if not a managed string
+static rstr * rstr_from(const char * data) {
+    if (data == nullptr)
         return nullptr;
-    }
 
-    struct rstr * r = (struct rstr *)(data - sizeof(struct rstr));
-    if (r->soh == SOH && r->stx == STX && r->etx == ETX) {
-        return r;
+    rstr * r = (rstr *)(data - offsetof(rstr, data));
+    if (r->soh == SOH && r->stx == STX) {
+        // Check ETX marker at end
+        if (r->data[r->cap] == ETX) {
+            return r;
+        }
     }
-
     return nullptr;
 }
 
-/**
- * Create a new "rune string" with the given data, length, and hash.
- * The string is allocated in a single block of memory,
- * with the metadata followed by the string data.
- *
- * @param data the string data to store.
- * @param len the length of the string data.
- * @param hash the precomputed hash of the string data.
- * @return a pointer to the newly created "rune string".
- */
-[[nodiscard]]
-static struct rstr * rstr_new(const char * data, const size_t len, const unsigned long long hash) {
-    const size_t cap = len + 1; // +1 for null terminator
-    const size_t data_size = cap * sizeof(char);
-
-    struct rstr * r = r_malloc(sizeof(struct rstr) + data_size);
+// Allocate new rstr with given length
+static rstr * rstr_alloc(size_t len) {
+    const size_t total = sizeof(rstr) + len + 2; // +1 for null, +1 for ETX
+    rstr * r = mem_alloc(total);
     r->soh = SOH;
     r->len = len;
     r->cap = len;
-    r->hash = hash;
+    r->hash = 0L;
     r->stx = STX;
-    r->data = (char *)(r + 1);
-    r->etx = ETX;
-    if (data == nullptr) {
-        memset(r->data, NULLTERM, data_size);
-    } else {
-        memcpy(r->data, data, len);
-        r->data[len] = NULLTERM; // null-terminate the string
-    }
+    r->data[len] = NULLTERM;
+    r->data[len + 1] = ETX;
     return r;
 }
 
-/**
- * Create a new "rune string" from the given data, up to a maximum length.
- * This function computes the length and hash of the string,
- * and returns a new "rune string" structure.
- *
- * @param data the string data to convert.
- * @param max_len the maximum length of the string data.
- * @return a pointer to the newly created "rune string", or nullptr if invalid.
- */
-[[nodiscard]]
-static struct rstr * rstr_of(const char * data, const size_t max_len) {
-    // 1 - null check
-    if (data == nullptr) {
+// Create rstr from data, computing hash
+static rstr * rstr_new(const char * data, size_t max_len) {
+    if (data == nullptr)
         return nullptr;
-    }
 
-    // 2 - measure the length of the string while computing the hash
+    // Compute length and hash in one pass
     size_t len = 0;
-    unsigned long long hash = fnv1a_start();
+    uint64_t hash = fnv1a_start();
     while (len < max_len && data[len] != NULLTERM) {
-        hash = fnv1a_next(hash, (unsigned char)data[len]);
+        hash = fnv1a_next(hash, (uint8_t)data[len]);
         len++;
     }
 
-    // 3 - check if the data size is too large
-    if (len > max_len) {
-        return nullptr;
-    }
-
-    // 4 - allocate and initialize the string
-    return rstr_new(data, len, hash);
-}
-
-/**
- * Resize a "rune string" to a new length and hash.
- * This function reallocates the memory if necessary,
- * and updates the metadata of the "rune string".
- *
- * @param r the "rune string" to resize.
- * @param new_len the new length of the string.
- * @param new_hash the new hash of the string.
- * @param realloc whether to always reallocate memory.
- * @return a pointer to the resized "rune string", or nullptr if invalid.
- */
-[[nodiscard]]
-static struct rstr *
-rstr_resize(struct rstr * r, const size_t new_len, const size_t new_hash, const bool realloc) {
-    if (r == nullptr) {
-        return nullptr;
-    }
-
-    if (new_len == r->cap) {
-        return r;
-    }
-
-    if (realloc || new_len > r->cap || new_len < r->cap >> 1) {
-        // reallocate if growing the string or shrinking it too much.
-        // `realloc` is used to force reallocation everytime.
-        const size_t new_size = sizeof(struct rstr) + (new_len + 1) * sizeof(char);
-        r = r_realloc(r, new_size);
-        r->cap = new_len;
-    }
-
-    r->len = new_len;
-    r->hash = new_hash;
-    r->data = (char *)(r + 1);
-    r->data[new_len] = NULLTERM;
-
+    rstr * r = rstr_alloc(len);
+    r->hash = hash;
+    memcpy(r->data, data, len);
     return r;
 }
 
-/**
- * Compute the hash of a string, either from a "rune string" or a regular C string.
- * If the input is a "rune string", it uses the precomputed hash; otherwise,
- * it computes the hash using the FNV-1a algorithm.
- *
- * @param str the string to hash.
- * @param max_len the maximum length of the string.
- * @return the hash value of the string.
- */
-static unsigned long long rstr_hash(const char * str, const size_t max_len) {
-    if (str == nullptr) {
-        return 0;
-    }
-    const struct rstr * r = rstr(str);
-    return r == nullptr ? fnv1a_hash(str, max_len) : r->hash;
+// Get length, using cached value for managed strings
+static size_t rstr_len(const char * s, size_t max_len) {
+    const rstr * r = rstr_from(s);
+    return r ? r->len : strnlen(s, max_len);
 }
 
-/**
- * Compute the KMP (Knuth-Morris-Pratt) longest prefix-suffix (LPS) array for a pattern.
- *
- * @param pat the pattern to compute the LPS for.
- * @param max_len the maximum length of the pattern.
- * @param lps output array to store the LPS values.
- */
-static void rstr_kmp_lps(const char * pat, const size_t max_len, int * lps) {
-    int len = 0;
+// Get hash, using cached value for managed strings
+static uint64_t rstr_hash(const char * s, size_t max_len) {
+    if (s == nullptr)
+        return 0;
+    const rstr * r = rstr_from(s);
+    return r ? r->hash : fnv1a_hash(s, max_len);
+}
+
+// =================================================================================================
+// Internal: KMP string search
+// =================================================================================================
+
+static void kmp_lps(const char * pat, size_t len, int * lps) {
+    int k = 0;
     lps[0] = 0;
-    size_t i = 1;
-    while (i < max_len) {
-        if (pat[i] == pat[len]) {
-            lps[i++] = ++len;
-        } else if (len) {
-            len = lps[len - 1];
+    for (size_t i = 1; i < len;) {
+        if (pat[i] == pat[k]) {
+            lps[i++] = ++k;
+        } else if (k) {
+            k = lps[k - 1];
         } else {
             lps[i++] = 0;
         }
     }
 }
 
-/**
- * Get the length of a "rune string" or a regular C string.
- * If the input is a "rune string", it uses the precomputed length; otherwise,
- * it computes the length using `strnlen`.
- *
- * @param str the string to get the length of.
- * @param max_len the maximum length to consider.
- * @return the length of the string, excluding the null terminator.
- */
-static size_t rstr_len(const char * str, const size_t max_len) {
-    const struct rstr * r = rstr(str);
-    return r == nullptr ? strnlen(str, max_len) : r->len;
-}
+static const char *
+kmp_find(const char * text, size_t text_len, const char * pat, size_t pat_len, bool reverse, int * lps) {
+    kmp_lps(pat, pat_len, lps);
 
-/**
- * Find a substring in a string using the KMP algorithm.
- * This function can find the first or last occurrence of the substring,
- * depending on the `rfind` parameter.
- *
- * @param str the string to search in.
- * @param key the substring to search for.
- * @param len the length of the string to search in.
- * @param key_len the length of the substring to search for.
- * @param rfind whether to find the last occurrence instead of the first.
- * @param lps pre-allocated array for the KMP longest prefix-suffix (LPS) values.
- * @return a pointer to the first or last occurrence of `key` in `str`, or nullptr if not found.
- */
-static const char * rstr_find(
-    const char * str,
-    const char * key,
-    const size_t len,
-    const size_t key_len,
-    const bool rfind,
-    int * const restrict lps
-) {
-    rstr_kmp_lps(key, key_len, lps);
-
-    ssize_t i = 0;
-    ssize_t j = 0;
+    size_t i = 0, j = 0;
     ssize_t last = -1;
-    while (i < len) {
-        if (str[i] == key[j]) {
+
+    while (i < text_len) {
+        if (text[i] == pat[j]) {
             i++;
             j++;
         }
-        if (j == key_len) {
-            if (rfind) {
-                last = i - j;
-                j = lps[j - 1];
+        if (j == pat_len) {
+            if (reverse) {
+                last = (ssize_t)(i - j);
+                j = (size_t)lps[j - 1];
             } else {
-                return str + (i - j);
+                return text + (i - j);
             }
         }
-        if (i < len && str[i] != key[j]) {
+        if (i < text_len && text[i] != pat[j]) {
             if (j == 0) {
                 i++;
             } else {
-                j = lps[j - 1];
+                j = (size_t)lps[j - 1];
             }
         }
     }
-    if (rfind && last >= 0) {
-        return str + last;
+
+    return reverse && last >= 0 ? text + last : nullptr;
+}
+
+// =================================================================================================
+// Public API: Creation and destruction
+// =================================================================================================
+
+extern char * R_(str)(const char * restrict data, const str_opt * opt) {
+    if (opt == nullptr)
+        opt = &R_STR_OPTS_DEFAULT;
+    if (err_null(data))
+        return nullptr;
+    rstr * r = rstr_new(data, opt->max_len);
+    if (r == nullptr) {
+        err_set(R_ERR_ALLOC_FAILED, nullptr);
+        return nullptr;
     }
-    return nullptr;
+    return r->data;
 }
 
-/**
- * Replace all occurrences of a substring in a string with another substring.
- * This function uses the KMP algorithm to find occurrences and replaces them
- * with the specified replacement string.
- *
- * @param data the original string data.
- * @param find the substring to find and replace.
- * @param repl the replacement substring.
- * @param max_len the maximum length of the original string.
- * @param lps pre-allocated array for the KMP longest prefix-suffix (LPS) values.
- * @return a new "rune string" with all occurrences replaced, or nullptr if an error occurs.
- */
-static struct rstr * rstr_replace(
-    const char * data,
-    const char * find,
-    const char * repl,
-    const size_t max_len,
-    int * const restrict lps
-) {
-    // 1 - get the length of each string
-    const size_t data_len = rstr_len(data, max_len);
-    const size_t find_len = rstr_len(find, max_len);
-    const size_t repl_len = rstr_len(repl, max_len);
+extern char * R_(strf)(const str_opt * opt, const char * fmt, ...) {
+    if (err_null(fmt))
+        return nullptr;
 
-    // 2 - compute how much the total length will increase for each substitution.
-    // this will be 0 if `repl` is the length or shorter than `find`.
-    const size_t increase = repl_len > find_len ? repl_len - find_len : 0;
+    if (opt == nullptr)
+        opt = &R_STR_OPTS_DEFAULT;
 
-    struct rstr * result = rstr_of(data, data_len);
+    const size_t max_len = opt->max_len;
+    va_list args;
+    va_start(args, fmt);
 
-    // 3 - iterate the string, finding all occurrences of `find` and counting
-    // how many times it occurs.
-    const size_t chunk_size = 128;
-
-    const char * finds[chunk_size];
-    const char * end = data + data_len;
-    const char * src = data;
-    char * dst = result->data;
-
-    size_t n = 0;
-    do {
-        n = 0;
-        for (const char *c = src, *idx = c; idx != nullptr && c < end && n < chunk_size;) {
-            idx = rstr_find(c, find, end - c, find_len, false, lps);
-            if (idx != nullptr) {
-                finds[n++] = idx;
-                c = idx + find_len; // move the pointer to the end of the found substring
-            }
-        }
-
-        // flush
-        const size_t total_increase = n * increase;
-        result = rstr_resize(result, data_len + total_increase, 0, realloc);
-
-        for (size_t i = 0; i < n; i++) {
-            // copy the data before the match
-            const size_t len = finds[i] - src;
-            memcpy(dst, src, len);
-            dst += len;
-            src += len;
-
-            // copy the replacement
-            memcpy(dst, repl, repl_len);
-            dst += repl_len;
-            src += find_len;
-        }
-    } while (n > 0);
-
-    const size_t tail_len = end - src;
-    memcpy(dst, src, tail_len);
-    dst += tail_len;
-    *dst = NULLTERM;
-    result->len = dst - result->data;
-    result->hash = fnv1a_hash(result->data, result->cap);
-    return result;
-}
-
-/**
- * Split a string into an array of strings using a delimiter.
- * This function uses the KMP algorithm to find occurrences of the delimiter
- * and splits the string accordingly.
- *
- * @param str the string to split.
- * @param str_len the length of the string to split.
- * @param delim the delimiter to use for splitting.
- * @param delim_len the length of the delimiter.
- * @param max_tokens the maximum number of tokens to return.
- * @param max_len the maximum length of each token.
- * @param result pre-allocated array to store the resulting tokens.
- * @return the number of tokens found, or 0 if none were found.
- */
-static size_t rstr_split(
-    const char * str,
-    const size_t str_len,
-    const char * delim,
-    const size_t delim_len,
-    const size_t max_tokens,
-    const size_t max_len,
-    char ** result
-) {
-    size_t count = 0;
-
-    const char * start = str;
-    const char * end;
-    while ((size_t)(start - str) < str_len && count < max_tokens) {
-        // Use rstr_find to locate the next delimiter
-        if (delim_len < RUNE_STR_STACK_MAX_LEN) {
-            int lps[delim_len];
-            end = rstr_find(start, delim, str_len - (start - str), delim_len, false, lps);
-        } else {
-            int * lps = r_calloc_t(delim_len, int);
-            end = rstr_find(start, delim, str_len - (start - str), delim_len, false, lps);
-            free(lps);
-        }
-        if (end == nullptr) {
-            end = str + str_len; // no more delimiters found
-        }
-        const size_t len = end - start;
-
-        if (len > 0 && len <= max_len) {
-            result[count] = r_malloc(len + 1);
-            memcpy(result[count], start, len);
-            result[count][len] = NULLTERM;
-            count++;
-        }
-        start = end + delim_len;
-    }
-
-    result[count] = nullptr;
-    return count;
-}
-
-// ------
-// public
-// ------
-
-extern char * RUNE(str)(const char * data, const size_t max_len, ...) {
-    const struct rstr * r = rstr_of(data, max_len);
-    return r == nullptr ? nullptr : r->data;
-}
-
-extern char * RUNE(strf)(const size_t max_len, const char * fmt, ...) {
-    if (max_len < RUNE_STR_STACK_MAX_LEN) {
-        va_list args;
-        va_start(args, fmt);
-        char tmp[max_len + 1]; // +1 for null terminator
+    // Try stack buffer first
+    if (max_len <= R_STR_STACK_MAX) {
+        char tmp[max_len + 1];
         const int n = vsnprintf(tmp, max_len + 1, fmt, args);
         va_end(args);
 
         if (n < 0 || (size_t)n > max_len) {
-            return nullptr; // error or too long
+            err_set(R_ERR_FORMAT_FAILED, nullptr);
+            return nullptr;
         }
-        return RUNE(str)(tmp, max_len);
+
+        rstr * r = rstr_new(tmp, (size_t)n);
+        if (r == nullptr) {
+            err_set(R_ERR_ALLOC_FAILED, nullptr);
+            return nullptr;
+        }
+        return r->data;
     }
 
-    va_list args;
-    va_start(args, fmt);
-    char * tmp = r_calloc_t(max_len + 1, char);
+    // Fall back to heap
+    char * tmp = mem_alloc(max_len + 1);
     const int n = vsnprintf(tmp, max_len + 1, fmt, args);
     va_end(args);
 
     char * result = nullptr;
-    if (n >= 0 && (size_t)n < max_len) {
-        result = RUNE(str)(tmp, max_len);
+    if (n >= 0 && (size_t)n <= max_len) {
+        rstr * r = rstr_new(tmp, (size_t)n);
+        if (r != nullptr) {
+            result = r->data;
+        } else {
+            err_set(R_ERR_ALLOC_FAILED, nullptr);
+        }
+    } else {
+        err_set(R_ERR_FORMAT_FAILED, nullptr);
     }
-    free(tmp);
+
+    mem_free(tmp, max_len + 1);
     return result;
 }
 
-extern bool RUNE(str_is)(const char * data, const size_t max_len, ... /* size */) {
-    const struct rstr * r = rstr(data);
-    return r != nullptr && r->len <= max_len;
-}
+extern void str_free(const char * s) {
+    if (s == nullptr)
+        return;
 
-extern void * str_free(char * data) {
-    if (data != nullptr) {
-        struct rstr * r = rstr(data);
-        if (r == nullptr) {
-            r_free(data);
-        } else {
-            r_free(r);
-        }
+    rstr * r = rstr_from(s);
+    if (r) {
+        mem_free(r, sizeof(rstr) + r->cap + 2);
     }
-    return nullptr;
 }
 
-extern size_t RUNE(str_len)(const char * str, const size_t max_len, ...) {
-    const struct rstr * r = rstr(str);
-    return r == nullptr ? strnlen(str, max_len) : r->len;
+// =================================================================================================
+// Public API: Queries
+// =================================================================================================
+
+extern bool R_(str_is)(const char * s, const str_opt * opt) {
+    return rstr_from(s) != nullptr;
 }
 
-extern size_t RUNE(str_size)(const char * str, const size_t max_len, ...) {
-    return str_len(str, max_len) + 1 + sizeof(struct rstr); // +1 for nullterm
+extern size_t R_(str_len)(const char * s, const str_opt * opt) {
+    if (opt == nullptr)
+        opt = &R_STR_OPTS_DEFAULT;
+    return s ? rstr_len(s, opt->max_len) : 0;
 }
 
-extern size_t RUNE(str_hash)(const char * str, const size_t len, ...) {
-    return rstr_hash(str, len);
+extern size_t R_(str_size)(const char * s, const str_opt * opt) {
+    const rstr * r = rstr_from(s);
+    return r ? sizeof(rstr) + r->cap + 2 : 0;
 }
 
-extern char * RUNE(str_cat)(const size_t max_len, const char * first, ...) {
-    // 1 - empty args check
-    if (first == nullptr) {
+extern uint64_t R_(str_hash)(const char * s, const str_opt * opt) {
+    if (opt == nullptr)
+        opt = &R_STR_OPTS_DEFAULT;
+    return rstr_hash(s, opt->max_len);
+}
+
+// =================================================================================================
+// Public API: Comparison
+// =================================================================================================
+
+extern int R_(str_cmp)(const char * a, const char * b, const str_opt * opt) {
+    if (opt == nullptr)
+        opt = &R_STR_OPTS_DEFAULT;
+    if (a == nullptr)
+        return b == nullptr ? 0 : -1;
+    if (b == nullptr)
+        return 1;
+    return strncmp(a, b, opt->max_len);
+}
+
+extern bool R_(str_eq)(const char * a, const char * b, const str_opt * opt) {
+    if (opt == nullptr)
+        opt = &R_STR_OPTS_DEFAULT;
+    if (a == nullptr)
+        return b == nullptr;
+    if (b == nullptr)
+        return false;
+
+    // Fast path: compare hashes first
+    if (rstr_hash(a, opt->max_len) != rstr_hash(b, opt->max_len)) {
+        return false;
+    }
+    return strncmp(a, b, opt->max_len) == 0;
+}
+
+// =================================================================================================
+// Public API: Search
+// =================================================================================================
+
+extern const char * R_(str_find)(const char * data, const char * target, const str_opt * opt) {
+    if (opt == nullptr)
+        opt = &R_STR_OPTS_DEFAULT;
+    if (err_null(data) || err_null(target))
+        return nullptr;
+
+    const size_t h_len = rstr_len(data, opt->max_len);
+    const size_t n_len = rstr_len(target, opt->max_len);
+
+    if (n_len == 0)
+        return data;
+    if (h_len < n_len) {
+        err_set(R_ERR_PATTERN_NOT_FOUND, nullptr);
         return nullptr;
     }
 
-    size_t n_strs = 0;
+    // Use stack buffer for small patterns (<=R_STR_STACK_MAX), heap for large patterns.
+    // This avoids VLA overhead for common cases while protecting stack on systems with
+    // limited stack space. Pattern length is naturally bounded by max_len (typically 4KB).
+    if (n_len <= R_STR_STACK_MAX) {
+        int lps[n_len];
+        return kmp_find(data, h_len, target, n_len, false, lps);
+    }
 
-    // 2 - resolve optional `size` and verify the arg count is less than `RUNE_STR_MAX_VARG`
+    int * lps = mem_alloc(n_len * sizeof(int));
+    const char * result = kmp_find(data, h_len, target, n_len, false, lps);
+    mem_free(lps, n_len * sizeof(int));
+    return result;
+}
+
+extern const char * R_(str_rfind)(const char * data, const char * target, const str_opt * opt) {
+    if (opt == nullptr)
+        opt = &R_STR_OPTS_DEFAULT;
+    if (err_null(data) || err_null(target))
+        return nullptr;
+
+    const size_t h_len = rstr_len(data, opt->max_len);
+    const size_t n_len = rstr_len(target, opt->max_len);
+
+    if (n_len == 0)
+        return data + h_len;
+    if (h_len < n_len) {
+        err_set(R_ERR_PATTERN_NOT_FOUND, nullptr);
+        return nullptr;
+    }
+
+    // Use stack buffer for small patterns (<=R_STR_STACK_MAX), heap for large patterns.
+    // This avoids VLA overhead for common cases while protecting stack on systems with
+    // limited stack space. Pattern length is naturally bounded by max_len (typically 4KB).
+    if (n_len <= R_STR_STACK_MAX) {
+        int lps[n_len];
+        return kmp_find(data, h_len, target, n_len, true, lps);
+    }
+
+    int * lps = mem_alloc(n_len * sizeof(int));
+    const char * result = kmp_find(data, h_len, target, n_len, true, lps);
+    mem_free(lps, n_len * sizeof(int));
+    return result;
+}
+
+// =================================================================================================
+// Public API: Transformation
+// =================================================================================================
+
+extern char * R_(str_cat)(const str_opt * opt, const char * first, ...) {
+    if (opt == nullptr)
+        opt = &R_STR_OPTS_DEFAULT;
+    if (err_null(first))
+        return nullptr;
+
+    const size_t max_len = opt->max_len;
+
+    // First pass: compute total length and hash
     va_list args;
     va_start(args, first);
+
     size_t total_len = 0;
-    unsigned long long hash = fnv1a_start();
-    const char * p = first;
-    while (p != nullptr && n_strs++ < RUNE_STR_MAX_VARG) {
-        const struct rstr * r = rstr(p);
+    uint64_t hash = fnv1a_start();
+    size_t count = 0;
+    bool overflow = false;
 
-        size_t len = 0;
-        size_t new_hash = hash;
+    for (const char * p = first; p != nullptr && count < R_STR_MAX_VARG; p = va_arg(args, const char *)) {
+        const rstr * r = rstr_from(p);
+        size_t len;
 
-        if (r == nullptr) {
-            size_t i = 0;
-            while (i < max_len && p[i] != NULLTERM) {
-                new_hash = fnv1a_next(new_hash, (unsigned char)p[i]);
-                i++;
-            }
-            len = i;
-        } else {
-            new_hash = fnv1a_mix(hash, r->hash);
+        if (r) {
             len = r->len;
+            hash = fnv1a_mix(hash, r->hash);
+        } else {
+            len = 0;
+            while (len < max_len && p[len] != NULLTERM) {
+                hash = fnv1a_next(hash, (uint8_t)p[len]);
+                len++;
+            }
         }
 
-        const size_t new_len = total_len + len;
-        if (new_len > max_len) {
-            // the total length is too large, break here.
-            p = nullptr;
-        } else {
-            total_len = new_len;
-            hash = new_hash;
-            p = va_arg(args, const char *);
+        if (total_len + len > max_len) {
+            overflow = true;
+            break;
         }
+        total_len += len;
+        count++;
     }
     va_end(args);
 
-    // 3 - iterate again, copying into the result buffer
-    const struct rstr * result = rstr_new(nullptr, total_len, hash);
+    if (overflow) {
+        err_set(R_ERR_LENGTH_EXCEEDED, nullptr);
+        return nullptr;
+    }
 
+    // Allocate result
+    rstr * result = rstr_alloc(total_len);
+    if (result == nullptr) {
+        err_set(R_ERR_ALLOC_FAILED, nullptr);
+        return nullptr;
+    }
+    result->hash = hash;
+
+    // Second pass: copy data
     va_start(args, first);
-    p = first;
     size_t pos = 0;
-    while (p != nullptr) {
-        const size_t p_len = str_len(p, max_len);
-        const size_t new_pos = pos + p_len;
 
-        if (new_pos > max_len) {
-            // the total length is too large, break here.
-            p = nullptr;
-        } else {
-            memcpy(result->data + pos, p, p_len);
-            pos = new_pos;
-            p = va_arg(args, const char *);
-        }
+    for (const char * p = first; p != nullptr && pos < total_len; p = va_arg(args, const char *)) {
+        size_t len = rstr_len(p, max_len);
+        if (pos + len > total_len)
+            len = total_len - pos;
+        memcpy(result->data + pos, p, len);
+        pos += len;
     }
     va_end(args);
 
-    result->data[total_len] = NULLTERM;
     return result->data;
 }
 
-extern int RUNE(str_cmp)(const char * a, const char * b, const size_t len, ...) {
-    if (a == nullptr) {
-        return b == nullptr ? 0 : -1;
-    }
-
-    if (b == nullptr) {
-        return 1;
-    }
-
-    return strncmp(a, b, len);
-}
-
-extern bool RUNE(str_eq)(const char * a, const char * b, const size_t len, ...) {
-    if (a == nullptr) {
-        return b == nullptr;
-    }
-
-    if (b == nullptr) {
-        return false;
-    }
-
-    return str_hash(a) == str_hash(b) && strncmp(a, b, len) == 0;
-}
-
-extern const char * RUNE(str_find)(const char * str, const char * key, const size_t len, ...) {
-    if (str == nullptr || key == nullptr) {
+extern char * R_(str_join)(const char * delim, const char ** arr, const str_opt * opt) {
+    if (opt == nullptr)
+        opt = &R_STR_OPTS_DEFAULT;
+    if (err_null(delim) || err_null(arr))
         return nullptr;
-    }
 
-    const size_t n = str_len(str, len);
-    const size_t m = str_len(key, len);
+    const size_t max_len = opt->max_len;
+    const size_t delim_len = rstr_len(delim, max_len);
 
-    if (m == 0) {
-        return str;
-    }
-
-    if (n < m) {
-        return nullptr;
-    }
-
-    if (m < RUNE_STR_STACK_MAX_LEN) {
-        int lps[m];
-        return rstr_find(str, key, n, m, false, lps);
-    }
-
-    int * lps = r_calloc_t(m, int);
-    const char * result = rstr_find(str, key, n, m, false, lps);
-    free(lps);
-    return result;
-}
-
-extern char * RUNE(str_join_arr)(
-    const char * delim,
-    const char ** arr,
-    const size_t max_join,
-    const size_t max_len,
-    ...
-) {
-    // 1 - null check
-    if (delim == nullptr || arr == nullptr) {
-        return nullptr;
-    }
-
-    const size_t delim_len = str_len(delim, max_len);
+    // Count strings and compute total length
+    size_t count = 0;
     size_t total_len = 0;
-    unsigned long long hash = fnv1a_start();
-    size_t n_strs = 0;
+    uint64_t hash = fnv1a_start();
 
-    // 2 - iterate the array, counting the lengths and validating against `max_len`
-    for (const char * p = *arr; n_strs++ < max_join && p != nullptr; p++) {
-        const struct rstr * r = rstr(p);
+    for (const char ** p = arr; *p != nullptr; p++) {
+        const rstr * r = rstr_from(*p);
+        size_t len;
 
-        size_t len = 0;
-        unsigned long long new_hash = hash;
-
-        if (r == nullptr) {
-            len = strnlen(p, max_len);
-            for (size_t j = 0; j < len && j < max_len; j++) {
-                new_hash = fnv1a_next(new_hash, (unsigned char)p[j]);
-            }
-        } else {
-            new_hash = fnv1a_mix(hash, r->hash);
+        if (r) {
             len = r->len;
+            hash = fnv1a_mix(hash, r->hash);
+        } else {
+            len = strnlen(*p, max_len);
+            for (size_t i = 0; i < len; i++) {
+                hash = fnv1a_next(hash, (uint8_t)(*p)[i]);
+            }
         }
 
-        const size_t new_len = total_len + len;
-        if (new_len > max_len) {
-            // the total length is too large, break here.
+        const size_t needed = total_len + len + (count > 0 ? delim_len : 0);
+        if (needed > max_len)
             break;
-        }
 
-        total_len = new_len;
-        hash = new_hash;
+        total_len = needed;
+        count++;
     }
 
-    if (n_strs <= 0) {
-        return nullptr; // no strings to join
+    if (count == 0) {
+        err_set(R_ERR_EMPTY_INPUT, nullptr);
+        return nullptr;
     }
 
-    total_len += (n_strs - 1) * delim_len; // add the delimiters
+    // Allocate and build result
+    rstr * result = rstr_alloc(total_len);
+    if (result == nullptr) {
+        err_set(R_ERR_ALLOC_FAILED, nullptr);
+        return nullptr;
+    }
+    result->hash = hash;
 
-    // 3 - allocate the result buffer
-    const struct rstr * result = rstr_new(nullptr, total_len, hash);
-
-    // 4 - iterate again, copying into the result buffer
     size_t pos = 0;
-    for (size_t i = 0; i < n_strs && arr[i] != nullptr; i++) {
-        const char * p = arr[i];
-        const size_t p_len = str_len(p, max_len);
-        memcpy(result->data + pos, p, p_len);
-        pos += p_len;
-
-        // add the delimiter if not the last string
-        if (i < n_strs - 1) {
+    for (size_t i = 0; i < count; i++) {
+        if (i > 0) {
             memcpy(result->data + pos, delim, delim_len);
             pos += delim_len;
         }
+        const size_t len = rstr_len(arr[i], max_len);
+        memcpy(result->data + pos, arr[i], len);
+        pos += len;
     }
 
-    result->data[total_len] = NULLTERM;
     return result->data;
 }
 
-extern char * RUNE(str_join_varg)(const char * delim, const size_t max_len, ...) {
-    // 1 - null check
-    if (delim == nullptr) {
+extern char * R_(str_repeat)(const char * s, size_t n, const str_opt * opt) {
+    if (opt == nullptr)
+        opt = &R_STR_OPTS_DEFAULT;
+    if (err_null(s) || err_check(n > 0, R_ERR_INVALID_ARGUMENT))
+        return nullptr;
+
+    const size_t max_len = opt->max_len;
+    const size_t len = rstr_len(s, max_len);
+    if (len == 0) {
+        err_set(R_ERR_EMPTY_INPUT, nullptr);
+        return nullptr;
+    }
+    if (n > max_len / len) {
+        err_set(R_ERR_LENGTH_EXCEEDED, nullptr);
         return nullptr;
     }
 
-    size_t n_strs = 0;
-
-    // 3 - reiterate, counting the lengths and validating against `max_len`
-    va_list args;
-    va_start(args, max_len);
-    size_t total_len = 0;
-    const size_t delim_len = str_len(delim, max_len);
-    unsigned long long hash = fnv1a_start();
-    const char * p = va_arg(args, const char *);
-    while (p != nullptr && n_strs++ < RUNE_STR_MAX_VARG) {
-        const struct rstr * r = rstr(p);
-
-        size_t len = 0;
-        unsigned long long new_hash = hash;
-
-        if (r == nullptr) {
-            size_t i = 0;
-            while (i < max_len && p[i] != NULLTERM) {
-                new_hash = fnv1a_next(new_hash, (unsigned char)p[i]);
-                i++;
-            }
-            len = i;
-        } else {
-            new_hash = fnv1a_mix(hash, r->hash);
-            len = r->len;
-        }
-
-        const size_t new_len = total_len + len;
-        if (new_len > max_len) {
-            // the total length is too large, break here.
-            p = nullptr;
-        } else {
-            total_len = new_len;
-            hash = new_hash;
-            p = va_arg(args, const char *);
-        }
+    const size_t total = len * n;
+    rstr * result = rstr_alloc(total);
+    if (result == nullptr) {
+        err_set(R_ERR_ALLOC_FAILED, nullptr);
+        return nullptr;
     }
-    va_end(args);
+    result->hash = rstr_hash(s, max_len); // Simplified: not combining hashes
 
-    total_len += (n_strs - 1) * delim_len; // add the delimiters
-
-    // 4 - iterate again, copying into the result buffer
-    const struct rstr * result = rstr_new(nullptr, total_len, hash);
-
-    va_start(args, max_len);
-    p = va_arg(args, const char *);
-
-    size_t pos = 0;
-    while (p != nullptr) {
-        const size_t p_len = str_len(p, max_len);
-        const size_t new_pos = pos + p_len;
-
-        if (new_pos > max_len) {
-            // the total length is too large, break here.
-            p = nullptr;
-        } else {
-            memcpy(result->data + pos, p, p_len);
-            pos = new_pos;
-
-            // add the delimiter if not the last string
-            p = va_arg(args, const char *);
-            if (p != nullptr) {
-                memcpy(result->data + pos, delim, delim_len);
-                pos += delim_len;
-            }
-        }
+    for (size_t i = 0; i < n; i++) {
+        memcpy(result->data + i * len, s, len);
     }
-    va_end(args);
 
-    result->data[total_len] = NULLTERM;
     return result->data;
 }
 
-extern const char * RUNE(str_rfind)(const char * str, const char * key, const size_t len, ...) {
-    if (str == nullptr || key == nullptr) {
+extern char * R_(str_replace)(const char * s, const char * target, const char * replacement, const str_opt * opt) {
+    if (opt == nullptr)
+        opt = &R_STR_OPTS_DEFAULT;
+    if (err_null(s) || err_null(target) || err_null(replacement))
+        return nullptr;
+
+    const size_t max_len = opt->max_len;
+    const size_t s_len = rstr_len(s, max_len);
+    const size_t t_len = rstr_len(target, max_len);
+    const size_t r_len = rstr_len(replacement, max_len);
+
+    if (t_len == 0 || s_len < t_len) {
+        // No match possible, return copy
+        return R_(str)(s, opt);
+    }
+
+    // Count occurrences to compute result size
+    // Note: str_find() sets R_ERR_PATTERN_NOT_FOUND when pattern is not found.
+    // We clear this expected error after counting, as "not found" is normal for the loop exit.
+    size_t count = 0;
+    const char * p = s;
+    while ((p = R_(str_find)(p, target, opt)) != nullptr) {
+        count++;
+        p += t_len;
+    }
+    err_clear(); // Clear R_ERR_PATTERN_NOT_FOUND from the final str_find() call
+
+    if (count == 0) {
+        return R_(str)(s, opt);
+    }
+
+    // Compute new length (handle both growth and shrinkage)
+    size_t new_len;
+    if (r_len >= t_len) {
+        new_len = s_len + count * (r_len - t_len);
+    } else {
+        new_len = s_len - count * (t_len - r_len);
+    }
+    if (new_len > max_len) {
+        err_set(R_ERR_LENGTH_EXCEEDED, nullptr);
         return nullptr;
     }
 
-    const size_t n = str_len(str, len);
-    const size_t m = str_len(key, len);
-
-    if (m == 0) {
-        return str + n;
-    }
-
-    if (n < m) {
+    rstr * result = rstr_alloc(new_len);
+    if (result == nullptr) {
+        err_set(R_ERR_ALLOC_FAILED, nullptr);
         return nullptr;
     }
 
-    if (m < RUNE_STR_STACK_MAX_LEN) {
-        int lps[m];
-        return rstr_find(str, key, n, m, true, lps);
+    // Build result
+    const char * src = s;
+    char * dst = result->data;
+
+    while ((p = R_(str_find)(src, target, opt)) != nullptr) {
+        const size_t chunk = (size_t)(p - src);
+        memcpy(dst, src, chunk);
+        dst += chunk;
+        memcpy(dst, replacement, r_len);
+        dst += r_len;
+        src = p + t_len;
+    }
+    err_clear(); // Clear R_ERR_PATTERN_NOT_FOUND from the final str_find() call
+
+    // Copy remainder
+    const size_t tail = s_len - (size_t)(src - s);
+    memcpy(dst, src, tail);
+
+    result->hash = fnv1a_hash(result->data, new_len);
+    return result->data;
+}
+
+extern char ** R_(str_split)(const char * s, const char * delim, const str_opt * opt) {
+    if (opt == nullptr)
+        opt = &R_STR_OPTS_DEFAULT;
+    if (err_null(s) || err_null(delim))
+        return nullptr;
+
+    const size_t max_len = opt->max_len;
+    const size_t max_tokens = opt->max_tok > 0 ? opt->max_tok : R_STR_MAX_VARG;
+    const size_t s_len = rstr_len(s, max_len);
+    const size_t d_len = rstr_len(delim, max_len);
+
+    if (d_len == 0 || s_len < d_len) {
+        err_set(R_ERR_INVALID_ARGUMENT, nullptr);
+        return nullptr;
     }
 
-    int * lps = r_calloc_t(m, int);
-    const char * result = rstr_find(str, key, n, m, true, lps);
-    free(lps);
+    // First pass: count tokens
+    size_t count = 0;
+    const char * start = s;
+    const char * end;
+
+    while (count < max_tokens && (size_t)(start - s) < s_len) {
+        end = R_(str_find)(start, delim, opt);
+        if (end == nullptr)
+            end = s + s_len;
+
+        if (end > start)
+            count++;
+        start = end + d_len;
+    }
+    err_clear(); // Clear error from str_find
+
+    if (count == 0) {
+        err_set(R_ERR_EMPTY_INPUT, nullptr);
+        return nullptr;
+    }
+
+    // Allocate result array
+    char ** result = mem_alloc_zero(count + 1, sizeof(char *));
+    if (result == nullptr) {
+        err_set(R_ERR_ALLOC_FAILED, nullptr);
+        return nullptr;
+    }
+
+    // Second pass: extract tokens
+    start = s;
+    size_t i = 0;
+
+    while (i < count && (size_t)(start - s) < s_len) {
+        end = R_(str_find)(start, delim, opt);
+        if (end == nullptr)
+            end = s + s_len;
+
+        const size_t len = (size_t)(end - start);
+        if (len > 0 && len <= max_len) {
+            rstr * token = rstr_alloc(len);
+            if (token == nullptr) {
+                err_set(R_ERR_ALLOC_FAILED, nullptr);
+                // Partial failure - free what we've allocated so far and return nullptr
+                str_free_arr(result);
+                return nullptr;
+            }
+            memcpy(token->data, start, len);
+            token->hash = fnv1a_hash(token->data, len);
+            result[i++] = token->data;
+        }
+        start = end + d_len;
+    }
+    err_clear(); // Clear error from str_find
+
+    result[i] = nullptr;
     return result;
 }
 
-extern char * RUNE(str_repeat)(const char * str, const size_t n, const size_t max_len, ...) {
-    // 1 - null check
-    if (str == nullptr || n == 0) {
-        return nullptr;
+void str_free_arr(char ** arr) {
+    if (arr == nullptr)
+        return;
+
+    // Count elements first
+    size_t count = 0;
+    for (char ** p = arr; *p != nullptr; p++)
+        count++;
+
+    // Free each string
+    for (size_t i = 0; i < count; i++) {
+        str_free(arr[i]);
     }
 
-    // 2 - get the length of the string
-    const size_t len = str_len(str, max_len);
-    if (len == 0 || n > max_len / len) {
-        return nullptr; // cannot repeat more than max_len / len times
-    }
-
-    // 3 - allocate the result buffer
-    const struct rstr * result = rstr_new(nullptr, len * n, str_hash(str, max_len));
-
-    // 4 - copy the string `n` times into the result buffer
-    for (size_t i = 0; i < n; i++) {
-        memcpy(result->data + i * len, str, len);
-    }
-    result->data[len * n] = NULLTERM; // null-terminate the string
-
-    return result->data;
-}
-
-extern char * RUNE(str_replace)(
-    const char * str,
-    const char * target,
-    const char * new_val,
-    const size_t max_len,
-    ...
-) {
-    if (str == nullptr || target == nullptr || new_val == nullptr) {
-        return nullptr;
-    }
-
-    const size_t n = str_len(str, max_len);
-    const size_t m = str_len(target, max_len);
-
-    if (m == 0 || n < m) {
-        return nullptr;
-    }
-
-    if (m < RUNE_STR_STACK_MAX_LEN) {
-        int lps[m];
-        const struct rstr * r = rstr_replace(str, target, new_val, max_len, lps);
-        return r->data;
-    }
-
-    int * lps = r_calloc_t(m, int);
-    const struct rstr * r = rstr_replace(str, target, new_val, max_len, lps);
-    free(lps);
-    return r->data;
-}
-
-extern char * RUNE(str_sub)(const char * str, ssize_t start, ssize_t n, ...) {
-    // 1 - null check
-    if (str == nullptr) {
-        return nullptr;
-    }
-
-    // 2 - get the string length
-    const ssize_t data_len = str_len(str);
-
-    // 3 - clamp `start` to the string bounds
-    start = CLAMP(start, 0, data_len);
-
-    // 4 - clamp `n` to the string bounds
-    if (n < 0) {
-        n = data_len - start;
-    }
-
-    size_t i = start;
-    unsigned long long hash = fnv1a_start();
-    while (i < data_len && i < start + n) {
-        hash = fnv1a_next(hash, (unsigned char)str[i]);
-        i++;
-    }
-    const size_t len = i;
-
-    // 5 - copy the substring into a new buffer
-    const struct rstr * result = rstr_new(str + start, len, hash);
-    return result->data;
-}
-
-char ** RUNE(str_split)(
-    const char * str,
-    const char * delim,
-    const size_t max_tokens,
-    const size_t max_len,
-    ...
-) {
-    if (str == nullptr || delim == nullptr) {
-        return nullptr;
-    }
-
-    const size_t n = str_len(str, max_len);
-    const size_t m = str_len(delim, max_len);
-
-    if (m == 0 || n < m) {
-        return nullptr;
-    }
-
-    char * result[max_tokens + 1];
-    const size_t count = rstr_split(str, n, delim, m, max_tokens, max_len, result);
-
-    char ** result_alloc = r_calloc_t(count + 1, char *);
-    memcpy(result_alloc, result, count * sizeof(char *));
-    result_alloc[count] = nullptr; // null-terminate the array
-    return result_alloc;
-}
-
-extern char * RUNE(str_capitalize)(char * str, const size_t max_len, ...) {
-    if (str == nullptr) {
-        return nullptr;
-    }
-
-    const size_t len = str_len(str, max_len);
-    if (len == 0) {
-        return str;
-    }
-
-    bool capped = false;
-
-    unsigned long long hash = fnv1a_start();
-    for (size_t i = 0; i < len; i++) {
-        if (!capped && !isspace((unsigned char)str[i])) {
-            str[i] = (char)(unsigned char)toupper(str[i]);
-            capped = true; // first non-space character is capitalized
-        }
-        hash = fnv1a_next(hash, str[i]);
-    }
-
-    struct rstr * r = rstr(str);
-    if (r->data != nullptr) {
-        r->hash = hash;
-    }
-    return str;
-}
-
-extern char * RUNE(str_lower)(char * str, const size_t max_len, ...) {
-    if (str == nullptr) {
-        return nullptr;
-    }
-
-    const size_t len = str_len(str, max_len);
-    if (len == 0) {
-        return str;
-    }
-
-    unsigned long long hash = fnv1a_start();
-    for (size_t i = 0; i < len; i++) {
-        str[i] = (char)(unsigned char)tolower(str[i]);
-        hash = fnv1a_next(hash, str[i]);
-    }
-
-    struct rstr * r = rstr(str);
-    if (r != nullptr) {
-        r->hash = hash;
-    }
-    return str;
-}
-
-extern char * RUNE(str_upper)(char * str, const size_t max_len, ...) {
-    if (str == nullptr) {
-        return nullptr;
-    }
-
-    const size_t len = str_len(str, max_len);
-    if (len == 0) {
-        return str;
-    }
-
-    unsigned long long hash = fnv1a_start();
-    for (size_t i = 0; i < len; i++) {
-        str[i] = (char)(unsigned char)toupper(str[i]);
-        hash = fnv1a_next(hash, str[i]);
-    }
-
-    struct rstr * r = rstr(str);
-    if (r != nullptr) {
-        r->hash = hash;
-    }
-    return str;
-}
-
-extern char * RUNE(str_reverse)(char * str, const size_t max_len, ...) {
-    if (str == nullptr) {
-        return nullptr;
-    }
-
-    const size_t len = str_len(str, max_len);
-    if (len == 0) {
-        return nullptr;
-    }
-
-    const size_t halflen = len >> 1;
-    unsigned long long hash = fnv1a_start();
-    for (size_t i = 0; i < halflen; i++) {
-        const size_t j = len - i - 1;
-        const char tmp = str[i];
-        str[i] = str[j];
-        str[j] = tmp;
-
-        hash = fnv1a_next(hash, str[i]);
-        hash = fnv1a_next(hash, str[j]);
-    }
-
-    if (len % 2 != 0) {
-        hash = fnv1a_next(hash, str[halflen]);
-    }
-
-    struct rstr * r = rstr(str);
-    if (r != nullptr) {
-        r->hash = hash;
-    }
-    return str;
-}
-
-char * RUNE(str_pad)(
-    char * str,
-    const size_t len,
-    const char pad_char,
-    const bool left,
-    const size_t max_len,
-    ...
-) {
-
-    if (str == nullptr) {
-        return nullptr;
-    }
-
-    size_t str_len_val = str_len(str, max_len);
-    if (str_len_val >= len)
-        return str; // No padding needed
-
-    size_t pad_size = len - str_len_val;
-    if (pad_size > max_len - str_len_val)
-        return nullptr; // Exceeds max
-
-    struct rstr * r = rstr(str);
-    if (r == nullptr) {
-        r = rstr_of(str, max_len);
-        if (r == nullptr)
-            return nullptr;
-    }
-
-    r = rstr_resize(r, len, 0, true);
-
-    if (left) {
-        memmove(r->data + pad_size, r->data, str_len_val + 1);
-        memset(r->data, pad_char, pad_size);
-    } else {
-        memset(r->data + str_len_val, pad_char, pad_size);
-        r->data[len] = NULLTERM;
-    }
-
-    r->len = len;
-    r->hash = fnv1a_hash(r->data, len);
-    return r->data;
-}
-
-extern char * RUNE(str_trim)(char * str, const size_t max_len, const bool realloc, ...) {
-    if (str == nullptr) {
-        return nullptr;
-    }
-
-    const size_t len = str_len(str, max_len);
-    if (len == 0) {
-        return nullptr;
-    }
-
-    size_t start = len;
-    size_t end = 0;
-    bool after_space = false;
-    unsigned long long hash = fnv1a_start();
-    for (size_t i = 0; i < len; i++) {
-        const unsigned char c = (unsigned char)str[i];
-
-        if (isspace(c)) {
-            if (i && !after_space) {
-                end = i;
-                after_space = true;
-            }
-        } else {
-            end = i;
-            if (start == len) {
-                start = i;
-            }
-            hash = fnv1a_next(hash, c);
-            after_space = false;
-        }
-    }
-
-    const size_t new_len = isspace((unsigned char)str[end]) ? end - start : end - start + 1;
-
-    if (new_len != len) {
-        struct rstr * r = rstr(str);
-        if (r == nullptr) {
-            r = rstr_of(str, max_len);
-        }
-
-        memmove(r->data, str + start, new_len);
-        r->data[new_len] = NULLTERM;
-
-        r = rstr_resize(r, new_len, hash, realloc);
-        return r->data;
-    }
-    return str;
-}
-
-extern char * RUNE(str_ltrim)(char * str, const size_t max_len, const bool realloc, ...) {
-    if (str == nullptr) {
-        return nullptr;
-    }
-
-    const size_t len = str_len(str, max_len);
-    if (len == 0) {
-        return str;
-    }
-
-    size_t start = 0;
-    unsigned long long hash = fnv1a_start();
-    while (start < len && isspace((unsigned char)str[start])) {
-        hash = fnv1a_next(hash, (unsigned char)str[start]);
-        start++;
-    }
-
-    if (start > 0) {
-        struct rstr * r = rstr(str);
-        if (r == nullptr) {
-            r = rstr_of(str, max_len);
-        }
-
-        memmove(str, str + start, len - start);
-        str[len - start] = NULLTERM;
-
-        r = rstr_resize(r, len - start, hash, realloc);
-        return r->data;
-    }
-    return str;
-}
-
-extern char * RUNE(str_rtrim)(char * str, const size_t max_len, const bool realloc, ...) {
-    if (str == nullptr) {
-        return nullptr;
-    }
-
-    const size_t len = str_len(str, max_len);
-    if (len == 0) {
-        return str;
-    }
-
-    size_t end = len - 1;
-    unsigned long long hash = fnv1a_start();
-    while (end > 0 && isspace((unsigned char)str[end])) {
-        hash = fnv1a_next(hash, (unsigned char)str[end]);
-        end--;
-    }
-
-    if (end < len - 1) {
-        struct rstr * r = rstr(str);
-        if (r == nullptr) {
-            r = rstr_of(str, max_len);
-        }
-
-        r->data[end + 1] = NULLTERM;
-        r = rstr_resize(r, end + 1, hash, realloc);
-        return r->data;
-    }
-    return str;
+    mem_free(arr, (count + 1) * sizeof(char *));
 }
