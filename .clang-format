@@ -1,5 +1,5 @@
 Language: Cpp
-ColumnLimit: 100
+ColumnLimit: 120
 PointerAlignment: Middle
 IndentWidth: 4
 UseTab: Never
