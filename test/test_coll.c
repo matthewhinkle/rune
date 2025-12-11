@@ -213,7 +213,7 @@ static void list_resize__to_larger_capacity__should_grow_list(void) {
 static void list_resize__to_smaller_capacity__should_shrink_list(void) {
     LIST(int) lst = list(int);
     lst.capacity = 16;
-    lst.data = mem_alloc_zero(16, sizeof(int));
+    lst.data = mem_alloc_zero(16 * sizeof(int));
     lst.size = 4;
 
     for (int i = 0; i < 4; i++) {

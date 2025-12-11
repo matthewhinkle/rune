@@ -1,12 +1,18 @@
 <component name="ProjectDictionaryState">
   <dictionary name="project">
     <words>
+      <w>appleby</w>
       <w>blankspace</w>
       <w>cstr</w>
       <w>delim</w>
+      <w>fmix</w>
+      <w>gparent</w>
       <w>halflen</w>
       <w>htole</w>
+      <w>isleft</w>
+      <w>llong</w>
       <w>memcpy</w>
+      <w>nblocks</w>
       <w>nullterm</w>
       <w>rarray</w>
       <w>rcfg</w>
@@ -18,6 +24,7 @@
       <w>rtrim</w>
       <w>sadd</w>
       <w>sbeg</w>
+      <w>schar</w>
       <w>scon</w>
       <w>scstr</w>
       <w>sfirst</w>
@@ -40,6 +47,8 @@
       <w>strncpy</w>
       <w>strnlen</w>
       <w>strsn</w>
+      <w>ullong</w>
+      <w>ulong</w>
     </words>
   </dictionary>
 </component>
