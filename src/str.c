@@ -636,7 +636,7 @@ extern char ** R_(str_split)(const char * s, const char * delim, const str_opt *
     }
 
     // Allocate result array
-    char ** result = mem_alloc_zero(count + 1, sizeof(char *));
+    char ** result = mem_alloc_zero((count + 1) * sizeof(char *));
     if (result == nullptr) {
         err_set(R_ERR_ALLOC_FAILED, nullptr);
         return nullptr;

@@ -138,7 +138,7 @@ static void mem_alloc__for_size__should_return__writable_memory(void) {
 
 static void mem_alloc_zero__for_count_and_size__should_return__zeroed_memory(void) {
     const size_t count = 10;
-    int * ptr = (int *)mem_alloc_zero(count, sizeof(int));
+    int * ptr = mem_alloc_zero(count * sizeof(int));
     CU_ASSERT_PTR_NOT_NULL(ptr);
 
     // Verify all elements are zero
@@ -150,7 +150,7 @@ static void mem_alloc_zero__for_count_and_size__should_return__zeroed_memory(voi
 }
 
 static void mem_alloc_zero__for_small_size__should_return__zeroed_byte(void) {
-    void * ptr = mem_alloc_zero(1, 1);
+    void * ptr = mem_alloc_zero(1);
     CU_ASSERT_PTR_NOT_NULL(ptr);
     CU_ASSERT_EQUAL(*(char *)ptr, 0);
     mem_free(ptr, 1);
@@ -182,7 +182,7 @@ static void mem_alloc_zero_t__for_count_and_type__should_return__zeroed_array(vo
         int b;
     } Pair;
     const size_t count = 5;
-    Pair * arr = mem_alloc_zero(count, sizeof(Pair));
+    Pair * arr = mem_alloc_zero(count * sizeof(Pair));
     CU_ASSERT_PTR_NOT_NULL(arr);
 
     // Verify all elements are zero
@@ -253,7 +253,7 @@ static void mem_realloc_t__for_larger_count__should_return__grown_typed_array(vo
     const size_t old_count = 5;
     const size_t new_count = 10;
 
-    Item * arr = mem_alloc_zero(old_count, sizeof(Item));
+    Item * arr = mem_alloc_zero(old_count * sizeof(Item));
     CU_ASSERT_PTR_NOT_NULL(arr);
 
     // Fill initial array
@@ -432,7 +432,7 @@ static void mem_alloc_zero__with_custom_allocator__should_return__zeroed_memory(
     setup_test_allocator();
 
     alloc_scope(test_allocator) {
-        int * arr = (int *)mem_alloc_zero(10, sizeof(int));
+        int * arr = mem_alloc_zero(10 * sizeof(int));
         CU_ASSERT_PTR_NOT_NULL(arr);
         CU_ASSERT_EQUAL(test_stats.alloc_count, 1);
 

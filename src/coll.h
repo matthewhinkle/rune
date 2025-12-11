@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "r.h"
+#include "rbt.h"
 
 // -------------------------------------------------------------------------------------------------
 // list
@@ -64,7 +65,7 @@
     ({                                                                                                                 \
         if ((lst)->capacity <= 0) {                                                                                    \
             (lst)->capacity = 4;                                                                                       \
-            (lst)->data = mem_alloc_zero((lst)->capacity, list_type_size(lst));                                        \
+            (lst)->data = mem_alloc_zero((lst)->capacity * list_type_size(lst));                                       \
         }                                                                                                              \
                                                                                                                        \
         while ((lst)->size >= (lst)->capacity) {                                                                       \
@@ -282,7 +283,7 @@ typedef struct {
 
 static LFQ(T) R_LFQ_OF(T)(size_t capacity, T * items, size_t count) {
     LFQ(T)
-    q = {.data = mem_alloc_zero(capacity, sizeof(T)), .capacity = capacity, .head = 0, .tail = 0};
+    q = {.data = mem_alloc_zero(capacity * sizeof(T)), .capacity = capacity, .head = 0, .tail = 0};
     for (size_t i = 0; i < count && i < capacity - 1; i++) {
         lfq_push(&q, items[i]);
     }
@@ -290,3 +291,4 @@ static LFQ(T) R_LFQ_OF(T)(size_t capacity, T * items, size_t count) {
 }
 
 #endif // T
+

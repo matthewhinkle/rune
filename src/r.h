@@ -37,7 +37,7 @@
  *   mem_realloc(
  *       ptr, old_n, new_n, type
  *   )                            Reallocate typed array
- *   mem_free(ptr, size)            Free allocated memory
+ *   mem_free(ptr, size)          Free allocated memory
  *
  * Example:
  *   // Allocate and use default allocator
@@ -351,7 +351,7 @@ extern allocator alloc_current(void);
 // --------- Allocator API: Memory operations ---------
 
 [[nodiscard]] extern void * mem_alloc(size_t size);
-[[nodiscard]] extern void * mem_alloc_zero(size_t count, size_t elem_size);
+[[nodiscard]] extern void * mem_alloc_zero(size_t size);
 [[nodiscard]] extern void * mem_realloc(void * ptr, size_t old_size, size_t new_size);
 extern void mem_free(void * ptr, size_t size);
 

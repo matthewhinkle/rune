@@ -1,4 +1,4 @@
-/*
+/**
  * Core string module - Unicode-safe byte string operations.
  *
  * Provides:
@@ -76,21 +76,21 @@
 
 #ifdef RCFG__STR_MAX_LEN
 static constexpr size_t R_STR_MAX_LEN = RCFG__STR_MAX_LEN;
-#else
+#else  // RCFG__STR_MAX_LEN
 static constexpr size_t R_STR_MAX_LEN = 4096;
-#endif
+#endif // RCFG__STR_MAX_LEN
 
 #ifdef RCFG__STR_STACK_MAX
 static constexpr size_t R_STR_STACK_MAX = RCFG__STR_STACK_MAX;
-#else
+#else  // RCFG__STR_STACK_MAX
 static constexpr size_t R_STR_STACK_MAX = 8 * 1024;
-#endif
+#endif // RCFG__STR_STACK_MAX
 
 #ifdef RCFG__STR_MAX_VARG
 static constexpr size_t R_STR_MAX_VARG = RCFG__STR_MAX_VARG;
-#else
+#else  // RCFG__STR_MAX_VARG
 static constexpr size_t R_STR_MAX_VARG = 64;
-#endif
+#endif // RCFG__STR_MAX_VARG
 
 // String options structure
 // -------------------------------------------------------------------------------------------------

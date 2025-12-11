@@ -278,11 +278,10 @@ extern void * mem_alloc(size_t size) {
     return a.alloc(a.ctx, size);
 }
 
-extern void * mem_alloc_zero(size_t count, size_t elem_size) {
+extern void * mem_alloc_zero(size_t size) {
     const allocator a = alloc_current();
-    const size_t total = count * elem_size;
-    void * ptr = a.alloc(a.ctx, total);
-    memset(ptr, 0, total);
+    void * ptr = a.alloc(a.ctx, size);
+    memset(ptr, 0, size);
     return ptr;
 }
 
