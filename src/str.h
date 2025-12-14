@@ -14,8 +14,8 @@
  *   ----------------------
  *   str(data, ...)           Create managed string from C string
  *   strf(fmt, ...)           Create formatted string (printf-style)
- *   stmem_free(s)              Free a managed string (nullptr-safe)
- *   stmem_free_arr(arr)        Free nullptr-terminated array of strings
+ *   str_free(s)              Free a managed string (nullptr-safe)
+ *   str_free_arr(arr)        Free nullptr-terminated array of strings
  *
  *   Inspection
  *   ----------
@@ -34,7 +34,7 @@
  *   str_find(data, target)   Find first occurrence (returns pointer or nullptr)
  *   str_rfind(data, target)  Find last occurrence (returns pointer or nullptr)
  *
- *   Transformation (returns new strings - free with stmem_free)
+ *   Transformation (returns new strings - free with str_free)
  *   -------------------------------------------------------
  *   str_cat(first, ...)      Concatenate strings (nullptr-terminated args)
  *   str_join(delim, arr)     Join nullptr-terminated array with delimiter
@@ -53,13 +53,14 @@
  *   char * greeting2 = strf("Hello, %s!", "World");
  *   char * combined = str_cat(greeting, " ", greeting2, nullptr);
  *
- *   stmem_free(greeting);
- *   stmem_free(greeting2);
- *   stmem_free(combined);
+ *   str_free(greeting);
+ *   str_free(greeting2);
+ *   str_free(combined);
  *
  * Requires C11 for _Generic support.
  */
 
+// ReSharper disable CppInconsistentNaming
 #ifndef RUNE_CORE_STR_H
 #define RUNE_CORE_STR_H
 
@@ -100,7 +101,7 @@ typedef struct {
     const size_t max_tok;
 } str_opt;
 
-static const str_opt R_STR_OPTS_DEFAULT = {
+static const str_opt r_str_opts_default = {
     .max_len = R_STR_MAX_LEN,
 };
 

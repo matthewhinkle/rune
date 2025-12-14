@@ -3,6 +3,7 @@
  */
 
 // ReSharper disable once CppMissingIncludeGuard
+// ReSharper disable CppInconsistentNaming
 #include <assert.h>
 #include <stdarg.h>
 #include <stdatomic.h>
@@ -10,7 +11,6 @@
 #include <string.h>
 
 #include "r.h"
-#include "rbt.h"
 
 // -------------------------------------------------------------------------------------------------
 // list
@@ -144,7 +144,7 @@ typedef struct {
     size_t capacity;
 } LIST(T);
 
-static LIST(T) R_LIST_OF(T)(T * items, size_t count) {
+static LIST(T) R_LIST_OF(T)(const T * items, size_t count) {
     LIST(T) lst = list_empty(T);
     for (size_t i = 0; i < count; i++) {
         list_add(&lst, items[i]);
@@ -281,7 +281,7 @@ typedef struct {
     R_Atomic(size_t) tail;
 } LFQ(T);
 
-static LFQ(T) R_LFQ_OF(T)(size_t capacity, T * items, size_t count) {
+static LFQ(T) R_LFQ_OF(T)(size_t capacity, const T * items, size_t count) {
     LFQ(T)
     q = {.data = mem_alloc_zero(capacity * sizeof(T)), .capacity = capacity, .head = 0, .tail = 0};
     for (size_t i = 0; i < count && i < capacity - 1; i++) {
@@ -292,3 +292,89 @@ static LFQ(T) R_LFQ_OF(T)(size_t capacity, T * items, size_t count) {
 
 #endif // T
 
+// -------------------------------------------------------------------------------------------------
+// red black tree
+// -------------------------------------------------------------------------------------------------
+
+#ifndef RUNE_RBT_API
+#define RUNE_RBT_API
+
+enum rbt_color { R_(red), R_(black) };
+
+enum rbt_dir { R_(left), R_(right) };
+
+#define RBT(type) R_GLUE(rbt_, type)
+#define RBT_NODE(type) R_GLUE(rbt_node_, type)
+#define R_RBT_NEW(type) R_GLUE(RBT(type), _new)
+#define R_RBT_NODE_NEW(type) R_GLUE(RBT_NODE(type), _new)
+
+#define rbt(type, cmp_fn) R_RBT_NEW(type)(R_OPT(nullptr, __VA_ARGS__))
+#define rbt_node(type, data) R_RBT_NODE_NEW(type)((data))
+
+#define rbt_cmp(t, a, b) ((t)->cmp == nullptr ? ((a) > (b)) - ((a) < (b)) : (t)->cmp_fn((a), (b)))
+
+#define rbt_parent(root, val, out_slot)                                                                                \
+    ({                                                                                                                 \
+        struct rb_node * parent = nullptr;                                                                             \
+        struct rb_node * cur = (root);                                                                                 \
+        while (cur != nullptr && rbt_cmp(t, val, cur->val) != 0) {                                                     \
+            parent = cur;                                                                                              \
+            if (rbt_cmp(t, val, cur->val) < 0) {                                                                       \
+                cur = cur->left;                                                                                       \
+            } else {                                                                                                   \
+                cur = cur->right;                                                                                      \
+            }                                                                                                          \
+        }                                                                                                              \
+        if ((out_slot) != nullptr) {                                                                                   \
+            (*out_slot) = cur;                                                                                         \
+        }                                                                                                              \
+                                                                                                                       \
+        /* return */ parent;                                                                                           \
+    })
+
+#define rbt_min(node)                                                                                                  \
+    ({                                                                                                                 \
+        struct rb_node * cur = (node);                                                                                 \
+        while (cur != nullptr && cur->left != nullptr) {                                                               \
+            cur = cur->left;                                                                                           \
+        }                                                                                                              \
+        /* return */ cur;                                                                                              \
+    })
+
+#define rbt_isleft(node) (node)->parent != nullptr && (node)->parent->left == (node)
+
+#endif // RUNE_RBT_API
+
+#ifdef T
+
+struct RBT_NODE(T) {
+    T data;
+    enum rbt_color color;
+    struct RBT_NODE(T) * parent;
+    struct RBT_NODE(T) * left;
+    struct RBT_NODE(T) * right;
+};
+
+typedef struct {
+    struct RBT_NODE(T) * root;
+    int (*cmp_fn)(T a, T b);
+    struct RBT_NODE(T) * (*node_fn)(T data);
+} RBT(T);
+
+static struct RBT_NODE(T) * R_RBT_NODE_NEW(T)(T data) {
+    struct RBT_NODE(T) * node = mem_alloc_zero(sizeof(struct RBT_NODE(T)));
+    node->color = R_(red);
+    node->data = data;
+    return node;
+}
+
+static RBT(T) R_RBT_NEW(T)(int (*cmp_fn)(T a, T b)) {
+    const RBT(T) rbt = {
+        .root = nullptr,
+        .cmp_fn = cmp_fn,
+        .node_fn = R_RBT_NODE_NEW(T),
+    };
+    return rbt;
+}
+
+#endif // T
