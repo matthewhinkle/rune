@@ -168,7 +168,7 @@ kmp_find(const char * text, size_t text_len, const char * pat, size_t pat_len, b
 
 extern char * R_(str)(const char * restrict data, const str_opt * opt) {
     if (opt == nullptr)
-        opt = &R_STR_OPTS_DEFAULT;
+        opt = &r_str_opts_default;
     if (err_null(data))
         return nullptr;
     rstr * r = rstr_new(data, opt->max_len);
@@ -184,7 +184,7 @@ extern char * R_(strf)(const str_opt * opt, const char * fmt, ...) {
         return nullptr;
 
     if (opt == nullptr)
-        opt = &R_STR_OPTS_DEFAULT;
+        opt = &r_str_opts_default;
 
     const size_t max_len = opt->max_len;
     va_list args;
@@ -250,7 +250,7 @@ extern bool R_(str_is)(const char * s, const str_opt * opt) {
 
 extern size_t R_(str_len)(const char * s, const str_opt * opt) {
     if (opt == nullptr)
-        opt = &R_STR_OPTS_DEFAULT;
+        opt = &r_str_opts_default;
     return s ? rstr_len(s, opt->max_len) : 0;
 }
 
@@ -261,7 +261,7 @@ extern size_t R_(str_size)(const char * s, const str_opt * opt) {
 
 extern uint64_t R_(str_hash)(const char * s, const str_opt * opt) {
     if (opt == nullptr)
-        opt = &R_STR_OPTS_DEFAULT;
+        opt = &r_str_opts_default;
     return rstr_hash(s, opt->max_len);
 }
 
@@ -271,7 +271,7 @@ extern uint64_t R_(str_hash)(const char * s, const str_opt * opt) {
 
 extern int R_(str_cmp)(const char * a, const char * b, const str_opt * opt) {
     if (opt == nullptr)
-        opt = &R_STR_OPTS_DEFAULT;
+        opt = &r_str_opts_default;
     if (a == nullptr)
         return b == nullptr ? 0 : -1;
     if (b == nullptr)
@@ -281,7 +281,7 @@ extern int R_(str_cmp)(const char * a, const char * b, const str_opt * opt) {
 
 extern bool R_(str_eq)(const char * a, const char * b, const str_opt * opt) {
     if (opt == nullptr)
-        opt = &R_STR_OPTS_DEFAULT;
+        opt = &r_str_opts_default;
     if (a == nullptr)
         return b == nullptr;
     if (b == nullptr)
@@ -300,7 +300,7 @@ extern bool R_(str_eq)(const char * a, const char * b, const str_opt * opt) {
 
 extern const char * R_(str_find)(const char * data, const char * target, const str_opt * opt) {
     if (opt == nullptr)
-        opt = &R_STR_OPTS_DEFAULT;
+        opt = &r_str_opts_default;
     if (err_null(data) || err_null(target))
         return nullptr;
 
@@ -330,7 +330,7 @@ extern const char * R_(str_find)(const char * data, const char * target, const s
 
 extern const char * R_(str_rfind)(const char * data, const char * target, const str_opt * opt) {
     if (opt == nullptr)
-        opt = &R_STR_OPTS_DEFAULT;
+        opt = &r_str_opts_default;
     if (err_null(data) || err_null(target))
         return nullptr;
 
@@ -364,7 +364,7 @@ extern const char * R_(str_rfind)(const char * data, const char * target, const 
 
 extern char * R_(str_cat)(const str_opt * opt, const char * first, ...) {
     if (opt == nullptr)
-        opt = &R_STR_OPTS_DEFAULT;
+        opt = &r_str_opts_default;
     if (err_null(first))
         return nullptr;
 
@@ -434,7 +434,7 @@ extern char * R_(str_cat)(const str_opt * opt, const char * first, ...) {
 
 extern char * R_(str_join)(const char * delim, const char ** arr, const str_opt * opt) {
     if (opt == nullptr)
-        opt = &R_STR_OPTS_DEFAULT;
+        opt = &r_str_opts_default;
     if (err_null(delim) || err_null(arr))
         return nullptr;
 
@@ -497,7 +497,7 @@ extern char * R_(str_join)(const char * delim, const char ** arr, const str_opt 
 
 extern char * R_(str_repeat)(const char * s, size_t n, const str_opt * opt) {
     if (opt == nullptr)
-        opt = &R_STR_OPTS_DEFAULT;
+        opt = &r_str_opts_default;
     if (err_null(s) || err_check(n > 0, R_ERR_INVALID_ARGUMENT))
         return nullptr;
 
@@ -529,7 +529,7 @@ extern char * R_(str_repeat)(const char * s, size_t n, const str_opt * opt) {
 
 extern char * R_(str_replace)(const char * s, const char * target, const char * replacement, const str_opt * opt) {
     if (opt == nullptr)
-        opt = &R_STR_OPTS_DEFAULT;
+        opt = &r_str_opts_default;
     if (err_null(s) || err_null(target) || err_null(replacement))
         return nullptr;
 
@@ -600,7 +600,7 @@ extern char * R_(str_replace)(const char * s, const char * target, const char * 
 
 extern char ** R_(str_split)(const char * s, const char * delim, const str_opt * opt) {
     if (opt == nullptr)
-        opt = &R_STR_OPTS_DEFAULT;
+        opt = &r_str_opts_default;
     if (err_null(s) || err_null(delim))
         return nullptr;
 

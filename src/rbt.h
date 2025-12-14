@@ -31,7 +31,6 @@
 
 #include "r.h"
 
-#include <assert.h>
 #include <stdio.h>
 
 // ================================================================================================
@@ -84,6 +83,14 @@ static struct rb_node * rb_parent(struct rb_node * root, const int val, struct r
         *out_slot = cur;
     }
     return parent;
+}
+
+static struct rb_node * rb_min(struct rb_node * node) {
+    struct rb_node * cur = node;
+    while (cur != nullptr && cur->left != nullptr) {
+        cur = cur->left;
+    }
+    return cur;
 }
 
 static bool rb_isleft(const struct rb_node * node) {
@@ -164,7 +171,9 @@ static void rb_rotate(rb_tree * tree, struct rb_node * node, enum rb_dir dir) {
 // ================================================================================================
 
 static void rb_insert(rb_tree * tree, const int val) {
-    assert(tree != nullptr);
+    if (tree == nullptr) {
+        return;
+    }
 
     // 1 - find parent
     struct rb_node * slot = nullptr;
@@ -203,6 +212,7 @@ static void rb_insert(rb_tree * tree, const int val) {
         struct rb_node * gparent = cur->parent->parent;
         struct rb_node * uncle = parent_left ? gparent->right : gparent->left;
 
+        // 7 - check if uncle is black, if so, we need rotations and then we may exit
         if (uncle == nullptr || uncle->color == black) {
             // uncle is black
             if (rb_isleft(cur)) {
@@ -233,17 +243,101 @@ static void rb_insert(rb_tree * tree, const int val) {
             break;
         }
 
-        // uncle is red - recolor
+        // 8 - the uncle is red, recolor and continue checking for violations up the tree
         uncle->color = black;
         cur->parent->color = black;
         gparent->color = red;
         cur = gparent;
     }
 
-    // ensure root is black
+    // 9 - ensure root is black
     if (tree->root != nullptr) {
         tree->root->color = black;
     }
+}
+
+// ================================================================================================
+// DELETION
+// ================================================================================================
+
+/**
+ * Replace a node with its child in the tree structure.
+ */
+static void rb_replace(rb_tree * tree, const struct rb_node * node, struct rb_node * child) {
+    if (child != nullptr) {
+        child->parent = node->parent;
+    }
+    if (node->parent != nullptr) {
+        if (rb_isleft(node)) {
+            node->parent->left = child;
+        } else {
+            node->parent->right = child;
+        }
+    } else {
+        tree->root = child;
+    }
+}
+
+/**
+ * Perform BST deletion and return the node to start RB fixup from.
+ *
+ * Returns the node that needs RB fixup, or nullptr if no fixup needed.
+ * The returned node's color will indicate whether fixup is necessary.
+ */
+static struct rb_node * rb_bst_delete(rb_tree * tree, struct rb_node * node) {
+    // Two children case
+    if (node->left && node->right) {
+        struct rb_node * successor = rb_min(node->right);
+
+        // Extract successor from its current position
+        if (successor->parent != node) {
+            if (successor->right) {
+                successor->right->parent = successor->parent;
+            }
+            successor->parent->left = successor->right;
+        }
+
+        // Replace node with successor
+        successor->left = node->left;
+        successor->left->parent = successor;
+
+        if (successor->parent != node) {
+            successor->right = node->right;
+            successor->right->parent = successor;
+        }
+
+        successor->parent = node->parent;
+        successor->color = node->color;
+        rb_replace(tree, node, successor);
+
+        mem_free(node, sizeof(struct rb_node));
+        return successor;
+    }
+
+    // One child case (either left or right)
+    struct rb_node * child = node->left ? node->left : node->right;
+    rb_replace(tree, node, child);
+    mem_free(node, sizeof(struct rb_node));
+    return child;
+}
+
+static void rb_delete(rb_tree * tree, const int val) {
+    if (tree == nullptr) {
+        return;
+    }
+
+    struct rb_node * slot = nullptr;
+    struct rb_node * parent = rb_parent(tree->root, val, &slot);
+
+    if (slot == nullptr) {
+        return; // value not found
+    }
+
+    // Perform BST deletion and get the node to start RB fixup from
+    struct rb_node * fixup_node = rb_bst_delete(tree, slot);
+
+    // TODO: RB fixup here
+    // Only needed if a black node was deleted
 }
 
 // ================================================================================================
