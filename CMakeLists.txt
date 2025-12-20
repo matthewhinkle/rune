@@ -3,6 +3,13 @@ project(rune C)
 
 set(CMAKE_C_STANDARD 23)
 
+# Suppress macro naming convention warnings across all compilers
+if (MSVC)
+    add_compile_options(/wd4668)  # Undefined preprocessor identifier
+else ()
+    add_compile_options(-Wno-reserved-identifier)  # GCC/Clang: macro names like 'scope'
+endif ()
+
 # ================================================================================================
 # rune target
 # ================================================================================================
@@ -13,8 +20,19 @@ find_package(SDL3 CONFIG REQUIRED)
 # Find Vulkan
 find_package(Vulkan REQUIRED)
 
-# Find CUnit
-find_package(unofficial-cunit CONFIG REQUIRED)
+# Find CUnit - portable across platforms
+find_path(CUNIT_INCLUDE_DIR NAMES CUnit/CUnit.h)
+find_library(CUNIT_LIBRARY NAMES cunit)
+
+if (CUNIT_INCLUDE_DIR AND CUNIT_LIBRARY)
+    set(CUNIT_INCLUDE_DIRS ${CUNIT_INCLUDE_DIR})
+    set(CUNIT_LIBRARIES ${CUNIT_LIBRARY})
+else ()
+    message(FATAL_ERROR "CUnit not found. Please install it:\n"
+            "  macOS: brew install cunit\n"
+            "  Linux: sudo apt-get install libcunit1-dev (Ubuntu) or equivalent\n"
+            "  Windows: vcpkg install cunit or download from https://cunit.sourceforge.net/")
+endif ()
 
 # Note: Old source files excluded - they will be replaced with new implementations
 # set(RUNE_SRC
@@ -34,7 +52,6 @@ set(RUNE_SRC
         src/str.c
         src/hash.h
         src/hash.c
-        src/rbt.h
 )
 
 # Add the executable
@@ -51,23 +68,23 @@ target_link_libraries(rune PRIVATE SDL3::SDL3 Vulkan::Vulkan)
 
 # Test executable for rune.h core functionality (22 tests, 217 assertions)
 add_executable(test_rune test/r_test.h test/test_r.c src/r.c)
-target_link_libraries(test_rune PRIVATE unofficial::cunit::cunit)
+target_include_directories(test_rune PRIVATE ${CUNIT_INCLUDE_DIRS})
+target_link_libraries(test_rune PRIVATE ${CUNIT_LIBRARIES})
 
 # Test executable for coll.h collections (40 tests)
 add_executable(test_coll test/r_test.h test/test_coll.c src/r.c)
-target_link_libraries(test_coll PRIVATE unofficial::cunit::cunit)
+target_include_directories(test_coll PRIVATE ${CUNIT_INCLUDE_DIRS})
+target_link_libraries(test_coll PRIVATE ${CUNIT_LIBRARIES})
 
 # Test executable for str.h string module (coverage pending)
 add_executable(test_str test/r_test.h test/test_str.c ${RUNE_SRC})
-target_link_libraries(test_str PRIVATE unofficial::cunit::cunit)
+target_include_directories(test_str PRIVATE ${CUNIT_INCLUDE_DIRS})
+target_link_libraries(test_str PRIVATE ${CUNIT_LIBRARIES})
 
 # Test executable for hash.h hash module
 add_executable(test_hash test/test.h test/test_hash.c src/r.c src/hash.c)
-target_link_libraries(test_hash PRIVATE unofficial::cunit::cunit)
-
-# Test executable for rbt.h red-black tree module
-add_executable(test_rbt test/test.h test/test_rbt.c src/r.c)
-target_link_libraries(test_rbt PRIVATE unofficial::cunit::cunit)
+target_include_directories(test_hash PRIVATE ${CUNIT_INCLUDE_DIRS})
+target_link_libraries(test_hash PRIVATE ${CUNIT_LIBRARIES})
 
 # Custom target to run all tests
 add_custom_target(run_tests
@@ -75,8 +92,7 @@ add_custom_target(run_tests
         COMMAND test_coll
         COMMAND test_str
         COMMAND test_hash
-        COMMAND test_rbt
-        DEPENDS test_rune test_coll test_str test_hash test_rbt
+        DEPENDS test_rune test_coll test_str test_hash
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Running unit tests . . ."
 )

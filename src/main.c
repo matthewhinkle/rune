@@ -4,15 +4,7 @@
 
 #include <stdio.h>
 
-#define T float
-#include "coll.h"
-#undef T
-
 int main() {
     printf("rune\n");
-
-    LIST(float) my_list = list(float, 1.0f, 2.0f, 3.0f);
-    list_free(&my_list);
-
     return 0;
 }
