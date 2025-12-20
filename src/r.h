@@ -60,7 +60,6 @@
 // ReSharper disable once CppUnusedIncludeDirective
 #include <stdatomic.h>
 #include <stdio.h>
-#include <stdlib.h>
 
 /*
  * ================================================================================================
@@ -86,11 +85,11 @@
 
 // --------- Type adapters ---------
 
-#ifdef _Atomic
-#define R_Atomic(type) _Atomic(type)
-#else // Fallback to a simple type if _Atomic is not available
-#define R_Atomic(type) type
-#endif // _Atomic
+#if defined(_MSC_VER)
+#define R_Atomic(type) type  // Fallback for MSVC where _Atomic may not be available
+#else
+#define R_Atomic(type) _Atomic(type)  // Use real _Atomic on GCC/Clang
+#endif
 
 // --------- Function wrapper macros ---------
 
@@ -102,8 +101,8 @@
 // via break, continue, or return.
 //
 // scope(push_fn, pop_fn, resource)  - Generic scoped resource
-//   push_fn: function that takes one argument to push the resource
-//   pop_fn:  function that takes no arguments to pop the resource
+//   push_fn: function that takes one argument to push the resource.
+//   pop_fn:  function that takes no arguments to pop the resource.
 //   resource: the resource to push
 //
 //   Example:
