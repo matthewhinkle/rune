@@ -5,6 +5,7 @@
  *   - MurmurHash3 32-bit hash optimized for x86
  *   - MurmurHash2 64-bit hash (64A variant)
  *   - MurmurHash3 128-bit hash optimized for x64
+ *   - xxHash64 ultra-fast 64-bit hash
  *   - Generic primitive hashing via _Generic dispatch
  *   - Convenience macros for common use cases
  *
@@ -12,27 +13,28 @@
  *
  *   Buffer Hashing
  *   --------------
- *   murmur32(data, len, seed)    32-bit MurmurHash3 (x86)
- *   murmur64(data, len, seed)    64-bit MurmurHash2 (64A)
- *   murmur128(data, len, seed)   128-bit MurmurHash3 (x64), returns hash128
- *   hash32(data, len)            32-bit hash with default seed
- *   hash64(data, len)            64-bit hash with default seed
- *   hash128(data, len)           128-bit hash with default seed
+ *   murmur32(data, len, seed)         32-bit MurmurHash3 (x86)
+ *   murmur64(data, len, seed)         64-bit MurmurHash2 (64A)
+ *   murmur128(data, len, seed)        128-bit MurmurHash3 (x64), returns hash128
+ *   xxhash64(data, len, seed)         64-bit xxHash64 (ultra-fast)
+ *   hash32(data, len)                 32-bit hash with default seed
+ *   hash64(data, len)                 64-bit hash with default seed
+ *   hash128(data, len)                128-bit hash with default seed
+ *   xxhash64_default(data, len)       xxHash64 with default seed
  *
  *   Value Hashing
  *   -------------
- *   hash(x)                      Hash any value (primitives, pointers, structs)
- *   hash_mix(x)                  Direct 64-bit integer mixing function
+ *   hash(x)                           Hash any value (primitives, pointers, structs)
+ *   hash_mix(x)                       Direct 64-bit integer mixing function
  *
  *   Types
  *   -----
- *   hash128_t                    128-bit hash result (two uint64_t values)
+ *   hash128_t                         128-bit hash result (two uint64_t values)
  *
  * Performance Notes:
- *   - Buffer hashing processes data in aligned chunks when possible
- *   - 32-bit variant processes 4 bytes at a time
- *   - 64-bit variant processes 8 bytes at a time
- *   - 128-bit variant processes 16 bytes at a time
+ *   - xxHash64 is fastest for large buffers (1KB+), especially on 64-bit systems
+ *   - MurmurHash64 offers good balance across all sizes
+ *   - MurmurHash128 best for fingerprinting and collision-sensitive use
  *   - Primitive hashing uses inline bit mixing with zero function call overhead
  *
  * Example:
@@ -40,6 +42,7 @@
  *   const char * key = "hello";
  *   uint32_t h32 = hash32(key, 5);
  *   uint64_t h64 = hash64(key, 5);
+ *   uint64_t hxx = xxhash64_default(key, 5);
  *   hash128_t h128 = hash128(key, 5);
  *
  *   // Primitive hashing
@@ -142,11 +145,26 @@ extern uint64_t murmur64(const void * data, size_t size, uint64_t seed);
  */
 extern hash128_t murmur128(const void * data, size_t size, uint64_t seed);
 
+/**
+ * xxHash64 (fast 64-bit hash).
+ *
+ * Ultra-fast 64-bit hash function with excellent distribution.
+ * Faster than MurmurHash on most modern systems, especially for larger data.
+ * Suitable for hash tables and general-purpose hashing.
+ *
+ * @param data  Pointer to data to hash
+ * @param size  Size of data in bytes
+ * @param seed  Seed value for hash initialization
+ * @return      64-bit hash value
+ */
+extern uint64_t xxhash64(const void * data, size_t size, uint64_t seed);
+
 // --------- Convenience macros ---------
 
 #define hash32(data, len) murmur32((data), (len), (uint32_t)R_HASH_DEFAULT_SEED)
 #define hash64(data, len) murmur64((data), (len), R_HASH_DEFAULT_SEED)
 #define hash128(data, len) murmur128((data), (len), R_HASH_DEFAULT_SEED)
+#define xxhash64_default(data, len) xxhash64((data), (len), R_HASH_DEFAULT_SEED)
 
 /*
  * ================================================================================================
@@ -229,6 +247,57 @@ static uint64_t hash_double(double x) {
  *   uint64_t h3 = hash64(buffer, len);     // For buffers, pointers, or other data
  */
 #define hash(x) _Generic((x), float: hash_float(x), double: hash_double(x), default: hash_mix(x))
+
+/*
+ * ================================================================================================
+ * HASH FUNCTION DISPATCH (for hash map auto-selection)
+ * ================================================================================================
+ */
+
+/**
+ * Hash dispatchers - Auto-select appropriate hash function by key type.
+ * Used internally by hmap macro for convenient auto-selection.
+ *
+ * For strings: Uses FNV-1a hashing (cached for managed strings)
+ * For primitives: Uses MurmurHash64
+ * For pointers: Uses MurmurHash64 on pointer value
+ * For custom types: Provide custom hash function via hmap_with()
+ */
+
+// String hash wrapper (for hash map dispatch)
+// Uses default string options (nullptr)
+static uint64_t R_HASH_FOR_STR(const char * key) {
+    // Forward declare to avoid circular dependency
+    extern uint64_t R_(str_hash)(const char * s, const void * opt);
+    return R_(str_hash)(key, nullptr); // Use default string options
+}
+
+// Primitive hash wrappers (for hash map dispatch)
+static uint64_t R_HASH_FOR_INT(int key) {
+    return murmur64(&key, sizeof(int), R_HASH_DEFAULT_SEED);
+}
+
+static uint64_t R_HASH_FOR_LONG(long key) {
+    return murmur64(&key, sizeof(long), R_HASH_DEFAULT_SEED);
+}
+
+static uint64_t R_HASH_FOR_UINT64(uint64_t key) {
+    return murmur64(&key, sizeof(uint64_t), R_HASH_DEFAULT_SEED);
+}
+
+static uint64_t R_HASH_FOR_INT64(int64_t key) {
+    return murmur64(&key, sizeof(int64_t), R_HASH_DEFAULT_SEED);
+}
+
+// Pointer hash wrapper
+static uint64_t R_HASH_FOR_PTR(const void * key) {
+    return murmur64(&key, sizeof(void *), R_HASH_DEFAULT_SEED);
+}
+
+// Generic bytes hash (fallback for custom types)
+static uint64_t R_HASH_FOR_BYTES(const void * key, size_t size) {
+    return xxhash64_default(key, size);
+}
 
 /*
  * ================================================================================================

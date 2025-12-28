@@ -919,6 +919,311 @@ static void murmur64__for_sequential_keys__should_produce__varied_hashes() {
 }
 
 // ========================================================================
+// xxhash64 tests - empty input
+// ========================================================================
+
+static void xxhash64__for_empty_data__should_return__deterministic_hash() {
+    // Arrange
+    const char * data = EMPTY;
+
+    // Act
+    const uint64_t h1 = xxhash64(data, 0, 0);
+    const uint64_t h2 = xxhash64(data, 0, 0);
+
+    // Assert
+    CU_ASSERT_EQUAL(h1, h2);
+}
+
+static void xxhash64__for_empty_data_with_different_seeds__should_return__different_hashes() {
+    // Arrange
+    const char * data = EMPTY;
+
+    // Act
+    const uint64_t h1 = xxhash64(data, 0, 0);
+    const uint64_t h2 = xxhash64(data, 0, 1);
+    const uint64_t h3 = xxhash64(data, 0, 42);
+
+    // Assert
+    CU_ASSERT_NOT_EQUAL(h1, h2);
+    CU_ASSERT_NOT_EQUAL(h2, h3);
+    CU_ASSERT_NOT_EQUAL(h1, h3);
+}
+
+// ========================================================================
+// xxhash64 tests - basic functionality
+// ========================================================================
+
+static void xxhash64__for_same_input__should_return__same_hash() {
+    // Arrange
+    const char * data = HELLO;
+
+    // Act
+    const uint64_t h1 = xxhash64(data, HELLO_LEN, 0);
+    const uint64_t h2 = xxhash64(data, HELLO_LEN, 0);
+
+    // Assert
+    CU_ASSERT_EQUAL(h1, h2);
+}
+
+static void xxhash64__for_different_inputs__should_return__different_hashes() {
+    // Arrange
+    const char * data1 = "hello";
+    const char * data2 = "world";
+
+    // Act
+    const uint64_t h1 = xxhash64(data1, 5, 0);
+    const uint64_t h2 = xxhash64(data2, 5, 0);
+
+    // Assert
+    CU_ASSERT_NOT_EQUAL(h1, h2);
+}
+
+static void xxhash64__for_different_seeds__should_return__different_hashes() {
+    // Arrange
+    const char * data = HELLO;
+
+    // Act
+    const uint64_t h1 = xxhash64(data, HELLO_LEN, 0);
+    const uint64_t h2 = xxhash64(data, HELLO_LEN, 1);
+    const uint64_t h3 = xxhash64(data, HELLO_LEN, 0xDEADBEEFCAFEBABEULL);
+
+    // Assert
+    CU_ASSERT_NOT_EQUAL(h1, h2);
+    CU_ASSERT_NOT_EQUAL(h2, h3);
+    CU_ASSERT_NOT_EQUAL(h1, h3);
+}
+
+// ========================================================================
+// xxhash64 tests - tail byte handling (size & 7)
+// ========================================================================
+
+static void xxhash64__for_1_byte__should_return__valid_hash() {
+    // Arrange - tests tail handling
+    const char * data = "a";
+
+    // Act
+    const uint64_t h = xxhash64(data, 1, 0);
+
+    // Assert - deterministic
+    CU_ASSERT_EQUAL(h, xxhash64(data, 1, 0));
+}
+
+static void xxhash64__for_2_bytes__should_return__valid_hash() {
+    // Arrange
+    const char * data = "ab";
+
+    // Act
+    const uint64_t h = xxhash64(data, 2, 0);
+
+    // Assert - deterministic
+    CU_ASSERT_EQUAL(h, xxhash64(data, 2, 0));
+}
+
+static void xxhash64__for_4_bytes__should_return__valid_hash() {
+    // Arrange - tests 4-byte tail handling
+    const char * data = "abcd";
+
+    // Act
+    const uint64_t h = xxhash64(data, 4, 0);
+
+    // Assert - deterministic
+    CU_ASSERT_EQUAL(h, xxhash64(data, 4, 0));
+}
+
+static void xxhash64__for_8_bytes__should_return__valid_hash() {
+    // Arrange - exactly one 8-byte block, no tail
+    const char * data = "abcdefgh";
+
+    // Act
+    const uint64_t h = xxhash64(data, 8, 0);
+
+    // Assert - deterministic
+    CU_ASSERT_EQUAL(h, xxhash64(data, 8, 0));
+}
+
+static void xxhash64__for_various_tail_sizes__should_produce__unique_hashes() {
+    // Arrange - test all relevant tail sizes and thresholds
+    const char * data = "0123456789abcdef";
+
+    // Act - test various sizes: small, 4-byte block, 8-byte block, and 32-byte threshold
+    const uint64_t h1 = xxhash64(data, 1, 0);    // 1 byte
+    const uint64_t h2 = xxhash64(data, 2, 0);    // 2 bytes
+    const uint64_t h4 = xxhash64(data, 4, 0);    // 4 bytes (4-byte block tail)
+    const uint64_t h7 = xxhash64(data, 7, 0);    // 7 bytes
+    const uint64_t h8 = xxhash64(data, 8, 0);    // 8 bytes (full 8-byte block)
+    const uint64_t h15 = xxhash64(data, 15, 0);  // 15 bytes
+    const uint64_t h16 = xxhash64(data, 16, 0);  // 16 bytes (2 blocks)
+
+    // Assert - all should be different
+    CU_ASSERT_NOT_EQUAL(h1, h2);
+    CU_ASSERT_NOT_EQUAL(h2, h4);
+    CU_ASSERT_NOT_EQUAL(h4, h7);
+    CU_ASSERT_NOT_EQUAL(h7, h8);
+    CU_ASSERT_NOT_EQUAL(h8, h15);
+    CU_ASSERT_NOT_EQUAL(h15, h16);
+}
+
+static void xxhash64__for_32_byte_threshold__should_use_parallel_processing() {
+    // Arrange - test that 32 bytes triggers parallel processing path
+    char data[64];
+    memset(data, 'A', sizeof(data));
+
+    // Act - hash below threshold (simple path), at threshold, and above
+    const uint64_t h16 = xxhash64(data, 16, 0);
+    const uint64_t h31 = xxhash64(data, 31, 0);
+    const uint64_t h32 = xxhash64(data, 32, 0);  // Triggers parallel v1-v4 processing
+    const uint64_t h33 = xxhash64(data, 33, 0);
+    const uint64_t h64 = xxhash64(data, 64, 0);
+
+    // Assert - hashes should differ (different code paths)
+    CU_ASSERT_NOT_EQUAL(h31, h32);  // Cross the 32-byte threshold
+    CU_ASSERT_NOT_EQUAL(h32, h33);
+    CU_ASSERT_NOT_EQUAL(h33, h64);
+}
+
+// ========================================================================
+// xxhash64 tests - large inputs
+// ========================================================================
+
+static void xxhash64__for_large_input__should_return__valid_hash() {
+    // Arrange - 1KB of data
+    char large_data[1024];
+    memset(large_data, 'A', sizeof(large_data));
+
+    // Act
+    const uint64_t h = xxhash64(large_data, sizeof(large_data), 0);
+
+    // Assert - deterministic
+    CU_ASSERT_EQUAL(h, xxhash64(large_data, sizeof(large_data), 0));
+}
+
+static void xxhash64__for_very_large_input__should_return__valid_hash() {
+    // Arrange - 1MB of data
+    char * large_data = mem_alloc_zero(1024 * 1024);
+
+    // Act
+    const uint64_t h = xxhash64(large_data, 1024 * 1024, 0);
+
+    // Assert - deterministic
+    CU_ASSERT_EQUAL(h, xxhash64(large_data, 1024 * 1024, 0));
+
+    mem_free(large_data, 1024 * 1024);
+}
+
+// ========================================================================
+// xxhash64 tests - binary data with null bytes
+// ========================================================================
+
+static void xxhash64__for_data_with_null_bytes__should_hash_all_bytes() {
+    // Arrange - data containing null bytes
+    const uint8_t data1[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+    const uint8_t data2[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02};
+
+    // Act
+    const uint64_t h1 = xxhash64(data1, sizeof(data1), 0);
+    const uint64_t h2 = xxhash64(data2, sizeof(data2), 0);
+
+    // Assert - should produce different hashes
+    CU_ASSERT_NOT_EQUAL(h1, h2);
+}
+
+// ========================================================================
+// xxhash64 tests - avalanche properties
+// ========================================================================
+
+static void xxhash64__for_single_bit_change__should_produce__different_hash() {
+    // Arrange
+    const uint8_t data1[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    const uint8_t data2[] = {0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+    // Act
+    const uint64_t h1 = xxhash64(data1, sizeof(data1), 0);
+    const uint64_t h2 = xxhash64(data2, sizeof(data2), 0);
+
+    // Assert
+    CU_ASSERT_NOT_EQUAL(h1, h2);
+}
+
+static void xxhash64__for_last_byte_change__should_produce__different_hash() {
+    // Arrange - change in tail bytes
+    const uint8_t data1[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    const uint8_t data2[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01};
+
+    // Act
+    const uint64_t h1 = xxhash64(data1, sizeof(data1), 0);
+    const uint64_t h2 = xxhash64(data2, sizeof(data2), 0);
+
+    // Assert
+    CU_ASSERT_NOT_EQUAL(h1, h2);
+}
+
+// ========================================================================
+// xxhash64 tests - distribution
+// ========================================================================
+
+static void xxhash64__for_sequential_keys__should_produce__varied_hashes() {
+    // Arrange & Act - hash sequential integers
+    uint64_t hashes[10];
+    for (int i = 0; i < 10; i++) {
+        hashes[i] = xxhash64(&i, sizeof(i), 0);
+    }
+
+    // Assert - all hashes should be unique
+    for (int i = 0; i < 10; i++) {
+        for (int j = i + 1; j < 10; j++) {
+            CU_ASSERT_NOT_EQUAL(hashes[i], hashes[j]);
+        }
+    }
+}
+
+// ========================================================================
+// xxhash64 convenience macro tests
+// ========================================================================
+
+static void xxhash64_default_macro__should_use__default_seed() {
+    // Arrange
+    const char * data = HELLO;
+
+    // Act
+    const uint64_t h1 = xxhash64_default(data, HELLO_LEN);
+    const uint64_t h2 = xxhash64(data, HELLO_LEN, R_HASH_DEFAULT_SEED);
+
+    // Assert
+    CU_ASSERT_EQUAL(h1, h2);
+}
+
+// ========================================================================
+// xxhash64 vs murmur64 comparison
+// ========================================================================
+
+static void xxhash64__should_differ_from_murmur64__for_same_input() {
+    // Arrange
+    const char * data = HELLO;
+
+    // Act - both hash functions should produce different results
+    const uint64_t hxx = xxhash64(data, HELLO_LEN, 0);
+    const uint64_t hmur = murmur64(data, HELLO_LEN, 0);
+
+    // Assert - different algorithms should produce different hashes
+    CU_ASSERT_NOT_EQUAL(hxx, hmur);
+}
+
+static void xxhash64_and_murmur64__should_be_deterministic_independently() {
+    // Arrange
+    const char * data = "The quick brown fox jumps over the lazy dog";
+
+    // Act - both should be individually deterministic
+    const uint64_t hxx1 = xxhash64(data, 44, 0);
+    const uint64_t hxx2 = xxhash64(data, 44, 0);
+    const uint64_t hmur1 = murmur64(data, 44, 0);
+    const uint64_t hmur2 = murmur64(data, 44, 0);
+
+    // Assert
+    CU_ASSERT_EQUAL(hxx1, hxx2);
+    CU_ASSERT_EQUAL(hmur1, hmur2);
+}
+
+// ========================================================================
 // main
 // ========================================================================
 
@@ -1038,6 +1343,44 @@ int main() {
     ADD_TEST(suite, hash_mix__for_same_input__should_return__same_output);
     ADD_TEST(suite, hash_mix__for_zero__should_return__deterministic);
     ADD_TEST(suite, hash_mix__for_sequential_inputs__should_produce__varied_outputs);
+
+    // xxhash64 tests - empty input
+    ADD_TEST(suite, xxhash64__for_empty_data__should_return__deterministic_hash);
+    ADD_TEST(suite, xxhash64__for_empty_data_with_different_seeds__should_return__different_hashes);
+
+    // xxhash64 tests - basic functionality
+    ADD_TEST(suite, xxhash64__for_same_input__should_return__same_hash);
+    ADD_TEST(suite, xxhash64__for_different_inputs__should_return__different_hashes);
+    ADD_TEST(suite, xxhash64__for_different_seeds__should_return__different_hashes);
+
+    // xxhash64 tests - tail handling and thresholds
+    ADD_TEST(suite, xxhash64__for_1_byte__should_return__valid_hash);
+    ADD_TEST(suite, xxhash64__for_2_bytes__should_return__valid_hash);
+    ADD_TEST(suite, xxhash64__for_4_bytes__should_return__valid_hash);
+    ADD_TEST(suite, xxhash64__for_8_bytes__should_return__valid_hash);
+    ADD_TEST(suite, xxhash64__for_various_tail_sizes__should_produce__unique_hashes);
+    ADD_TEST(suite, xxhash64__for_32_byte_threshold__should_use_parallel_processing);
+
+    // xxhash64 tests - large inputs
+    ADD_TEST(suite, xxhash64__for_large_input__should_return__valid_hash);
+    ADD_TEST(suite, xxhash64__for_very_large_input__should_return__valid_hash);
+
+    // xxhash64 tests - binary data with null bytes
+    ADD_TEST(suite, xxhash64__for_data_with_null_bytes__should_hash_all_bytes);
+
+    // xxhash64 tests - avalanche properties
+    ADD_TEST(suite, xxhash64__for_single_bit_change__should_produce__different_hash);
+    ADD_TEST(suite, xxhash64__for_last_byte_change__should_produce__different_hash);
+
+    // xxhash64 tests - distribution
+    ADD_TEST(suite, xxhash64__for_sequential_keys__should_produce__varied_hashes);
+
+    // xxhash64 convenience macro tests
+    ADD_TEST(suite, xxhash64_default_macro__should_use__default_seed);
+
+    // xxhash64 vs murmur64 comparison tests
+    ADD_TEST(suite, xxhash64__should_differ_from_murmur64__for_same_input);
+    ADD_TEST(suite, xxhash64_and_murmur64__should_be_deterministic_independently);
 
     CU_basic_set_mode(CU_BRM_VERBOSE);
     CU_basic_run_tests();

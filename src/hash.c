@@ -310,3 +310,90 @@ extern hash128_t murmur128(const void * data, size_t size, uint64_t seed) {
 
     return (hash128_t){.h1 = h1, .h2 = h2};
 }
+
+// =================================================================================================
+// Public API: xxHash64
+// =================================================================================================
+
+// xxHash64 prime constants
+static constexpr uint64_t XX64_PRIME1 = 11400714785074694791ULL;
+static constexpr uint64_t XX64_PRIME2 = 14029467366386228027ULL;
+static constexpr uint64_t XX64_PRIME3 = 1609587929392839161ULL;
+static constexpr uint64_t XX64_PRIME4 = 9650029242287828579ULL;
+static constexpr uint64_t XX64_PRIME5 = 2870177450012600261ULL;
+
+static uint64_t xx64_round(uint64_t acc, uint64_t lane) {
+    acc += lane * XX64_PRIME2;
+    acc = rotl64(acc, 31);
+    acc *= XX64_PRIME1;
+    return acc;
+}
+
+static uint64_t xx64_avalanche(uint64_t h64) {
+    h64 ^= h64 >> 33;
+    h64 *= XX64_PRIME2;
+    h64 ^= h64 >> 29;
+    h64 *= XX64_PRIME3;
+    h64 ^= h64 >> 32;
+    return h64;
+}
+
+extern uint64_t xxhash64(const void * data, size_t size, uint64_t seed) {
+    const uint8_t * bytes = (const uint8_t *)data;
+    uint64_t h64;
+
+    // Process by 8-byte blocks if we have enough data
+    if (size >= 32) {
+        const uint8_t * limit = bytes + size - 32;
+        uint64_t v1 = seed + XX64_PRIME1 + XX64_PRIME2;
+        uint64_t v2 = seed + XX64_PRIME2;
+        uint64_t v3 = seed;
+        uint64_t v4 = seed - XX64_PRIME1;
+
+        do {
+            v1 = xx64_round(v1, read_u64(bytes));
+            v2 = xx64_round(v2, read_u64(bytes + 8));
+            v3 = xx64_round(v3, read_u64(bytes + 16));
+            v4 = xx64_round(v4, read_u64(bytes + 24));
+            bytes += 32;
+        } while (bytes <= limit);
+
+        h64 = rotl64(v1, 1) + rotl64(v2, 7) + rotl64(v3, 12) + rotl64(v4, 18);
+
+        h64 = (h64 ^ xx64_round(0, v1)) * XX64_PRIME1 + XX64_PRIME4;
+        h64 = (h64 ^ xx64_round(0, v2)) * XX64_PRIME1 + XX64_PRIME4;
+        h64 = (h64 ^ xx64_round(0, v3)) * XX64_PRIME1 + XX64_PRIME4;
+        h64 = (h64 ^ xx64_round(0, v4)) * XX64_PRIME1 + XX64_PRIME4;
+    } else {
+        h64 = seed + XX64_PRIME5;
+    }
+
+    h64 += (uint64_t)size;
+
+    // Process remaining 8-byte blocks
+    while (size >= 8) {
+        uint64_t k1 = read_u64(bytes);
+        h64 ^= xx64_round(0, k1);
+        h64 = rotl64(h64, 27) * XX64_PRIME1 + XX64_PRIME4;
+        bytes += 8;
+        size -= 8;
+    }
+
+    // Process remaining 4-byte block if present
+    if (size >= 4) {
+        h64 ^= (uint64_t)read_u32(bytes) * XX64_PRIME1;
+        h64 = rotl64(h64, 23) * XX64_PRIME2 + XX64_PRIME3;
+        bytes += 4;
+        size -= 4;
+    }
+
+    // Process remaining 1-3 bytes
+    while (size > 0) {
+        h64 ^= ((uint64_t)*bytes) * XX64_PRIME5;
+        h64 = rotl64(h64, 11) * XX64_PRIME1;
+        bytes++;
+        size--;
+    }
+
+    return xx64_avalanche(h64);
+}
