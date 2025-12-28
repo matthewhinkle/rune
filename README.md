@@ -128,10 +128,10 @@ int main(void) {
 
 ## Documentation
 
-- **[Architecture](docs/ARCHITECTURE.md)** — Project structure and design
-- **[API Design](docs/API_DESIGN.md)** — Core API patterns and philosophy
-- **[Conventions](docs/CONVENTIONS.md)** — Coding standards
-- **[Testing](docs/TESTING.md)** — Testing framework
-- **[Development Guide](docs/DEVELOPMENT.md)** — Contributing to rune
-- **[Build System](docs/BUILD.md)** — Building and testing
-- **[Testing Internals](docs/TESTING_INTERNALS.md)** — Advanced testing utilities
+- **[Architecture](doc/ARCHITECTURE.md)** — Project structure and design
+- **[API Design](doc/API_DESIGN.md)** — Core API patterns and philosophy
+- **[Conventions](doc/CONVENTIONS.md)** — Coding standards
+- **[Testing](doc/TESTING.md)** — Testing framework
+- **[Development Guide](doc/DEVELOPMENT.md)** — Contributing to rune
+- **[Build System](doc/BUILD.md)** — Building and testing
+- **[Testing Internals](doc/TESTING_INTERNALS.md)** — Advanced testing utilities
