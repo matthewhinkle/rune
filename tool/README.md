@@ -1,18 +1,18 @@
 # Rune Tools
 
-This directory contains utility tools for the Rune project.
+Experimental tools for the Rune project. Not intended for production use yet.
 
 ## fmtheader
 
-A C-based tool that automatically formats repeated-character headers in source files to a consistent length of 120 characters.
+Normalizes those decorative `===` and `---` header lines in your source files to a consistent 120 characters. One less thing to micromanage.
 
-### Features
+### What It Does
 
-- Detects lines with 3+ consecutive repeated characters (e.g., `===`, `---`, `***`, etc.)
-- Extends them to exactly 120 characters
-- Preserves text content between repeated characters (e.g., `// --- Text ---`)
+- Finds lines with 3+ repeated characters (e.g., `===`, `---`, `***`)
+- Stretches them to exactly 120 characters
+- Keeps any text between the decorations (e.g., `// --- Text ---`)
 - Modifies files in-place
-- Processes multiple files in a single invocation
+- Handles multiple files at once
 
 ### Building
 
@@ -57,10 +57,10 @@ After (all normalized to 120 characters):
 * ==============================================================================================
 ```
 
-### Implementation Notes
+### Implementation Details
 
-- Written in C23 standard
-- No external dependencies
-- Supports lines up to 4096 characters
-- Preserves file structure and formatting
-- Safe in-place modification with full file reading before writing
+- Written in C23
+- No dependencies
+- Handles lines up to 4096 characters
+- Reads the whole file before writing (so it won't corrupt things if it crashes)
+- Preserves everything else—just fixes the decorations

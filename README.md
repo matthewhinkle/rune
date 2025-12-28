@@ -1,6 +1,6 @@
 # rune
 
-A modern C23 library providing foundational primitives with a clean, flexible API.
+A C23 library experimenting with foundational primitives found in higher-level languages.
 
 ## Features
 
@@ -10,15 +10,113 @@ A modern C23 library providing foundational primitives with a clean, flexible AP
 
 ## Quick Start
 
+### Strings
+
 ```c
-#include "core/str.h"
+#include "str.h"
 
+char *s = str("Hello");
+char *msg = str_cat(s, ", ", "world!");  // Concatenate multiple strings
+printf("%s\n", msg);                     // "Hello, world!"
+
+char **parts = str_split("a,b,c", ",");  // Split into array
+char *joined = str_join("-", parts);     // Join with delimiter
+printf("%s\n", joined);                  // "a-b-c"
+
+str_free(s);
+str_free(msg);
+str_free(joined);
+str_free_arr(parts);
+```
+
+### Collections (Type-Safe Generics)
+
+```c
+#define T int
+#include "coll.h"  // Instantiate list for int
+#undef T
+
+// Create and manipulate
+LIST(int) nums = list(int, 1, 2, 3, 4, 5);
+list_add(&nums, 6);
+list_insert(&nums, 0, 0);  // Insert at beginning
+printf("Size: %zu\n", nums.size);  // 7
+
+// Works with custom types too
+typedef struct { const char *name; int age; } Person;
+#define T Person
+#include "coll.h"
+#undef T
+
+LIST(Person) people = list(Person);
+list_add(&people, (Person){"Alice", 30});
+list_add(&people, (Person){"Bob", 25});
+printf("%s is %d\n", people.data[0].name, people.data[0].age);  // Alice is 30
+
+list_free(&nums);
+list_free(&people);
+```
+
+### Custom Allocators (Arena Example)
+
+```c
+#include "r.h"
+#include <string.h>
+
+// Arena allocator context
+typedef struct {
+    void *buffer;
+    size_t capacity;
+    size_t used;
+} arena_ctx;
+
+static void * arena_alloc(void *ctx, size_t size) {
+    arena_ctx *a = (arena_ctx *)ctx;
+    if (a->used + size > a->capacity) {
+        return nullptr;  // Out of memory
+    }
+    void *ptr = (char *)a->buffer + a->used;
+    a->used += size;
+    return ptr;
+}
+
+static void * arena_realloc(void *ctx, void *ptr, size_t old_size, size_t new_size) {
+    arena_ctx *a = (arena_ctx *)ctx;
+    if (new_size <= old_size) return ptr;
+    void *new_ptr = arena_alloc(ctx, new_size);
+    if (new_ptr) memcpy(new_ptr, ptr, old_size);
+    return new_ptr;
+}
+
+static void arena_free(void *ctx, void *ptr, size_t size) {
+    // No-op: arena frees all at once
+    (void)ctx; (void)ptr; (void)size;
+}
+
+// Usage
 int main(void) {
-    char *s = str("hello");
-    char *msg = str_cat(s, ", world!");
+    char buffer[10240];
+    arena_ctx ctx = {.buffer = buffer, .capacity = sizeof(buffer), .used = 0};
+    allocator arena = {
+        .alloc = arena_alloc,
+        .realloc = arena_realloc,
+        .free = arena_free,
+        .ctx = &ctx,
+    };
 
-    stmem_free(msg);
-    stmem_free(s);
+    alloc_scope(arena) {
+        // All allocations use the arena
+        char *s = str("From arena");
+
+        #define T int
+        #include "coll.h"
+        #undef T
+
+        LIST(int) nums = list(int, 1, 2, 3);
+        list_add(&nums, 4);
+
+        // Memory is automatically freed when scope exits
+    }
     return 0;
 }
 ```
@@ -30,58 +128,10 @@ int main(void) {
 
 ## Documentation
 
-### Architecture & Design
-- **[Architecture](docs/ARCHITECTURE.md)** — Project structure, module organization, and design principles
-  - Project structure and module layout
-  - Core module descriptions (`rune.h`, `str.h`, `coll.h`)
-  - Dependency graph and module organization
-  - Design principles and extensibility
-
-### API & Patterns
-- **[API Design](docs/API_DESIGN.md)** — Core API patterns and design philosophy
-  - **Naming conventions** — `R_` prefixes, public API naming, module patterns
-  - **Allocator interface** — Customizable memory operations
-  - **Polymorphic macros** — `_Generic` based optional parameters
-  - **Options structs** — Configuration with compound literals
-  - **Constructor configuration** — Flexible argument ordering with `R_DISPATCH`
-  - **Module structure** — Header and implementation patterns
-  - **Memory management** — Allocation, deallocation, runtime consistency
-  - **Error handling** — Thread-local error context design
-  - **C23 features** — Modern language features used throughout
-
-### Coding Standards
-- **[Conventions](docs/CONVENTIONS.md)** — Coding style and standards
-  - **Naming conventions** — Prefixes, casing rules, module naming, variable names
-  - **Code style** — Function signatures, parameter qualifiers, declarations, constants
-  - **Macro conventions** — Multi-statement, variadic args, type dispatch, formatting
-  - **Memory management** — Allocation, deallocation, assertion policy
-  - **Error handling** — Error setting, validation, clearing, documentation, return patterns
-  - **Documentation** — Comment style, module-level docs, function docs, inline comments
-  - **Type conventions** — Integer and pointer type usage
-  - **Header guards and includes** — File organization
-
-### Testing & Quality
-- **[Testing](docs/TESTING.md)** — Testing framework and conventions
-  - Framework (CUnit)
-  - File structure and test layout
-  - Test naming conventions and organization
-  - Helper macros and common assertions
-  - **Security testing** — Buffer overflow, null termination, format strings, edge cases
-  - Running tests
-
-### Development & Build
+- **[Architecture](docs/ARCHITECTURE.md)** — Project structure and design
+- **[API Design](docs/API_DESIGN.md)** — Core API patterns and philosophy
+- **[Conventions](docs/CONVENTIONS.md)** — Coding standards
+- **[Testing](docs/TESTING.md)** — Testing framework
 - **[Development Guide](docs/DEVELOPMENT.md)** — Contributing to rune
-  - Understanding project patterns
-  - Adding new modules
-  - Modifying existing code
-
-- **[Build System](docs/BUILD.md)** — Building, testing, and configuring the project
-  - Compiler and dependency requirements
-  - Installation instructions
-  - Build targets and configurations
-  - Running and debugging tests
-
-- **[Testing Internals](docs/TESTING_INTERNALS.md)** — Advanced testing with r_test.h
-  - Testing allocator internals
-  - Mocking allocators in tests
-  - Thread-local error and allocator stack access
+- **[Build System](docs/BUILD.md)** — Building and testing
+- **[Testing Internals](docs/TESTING_INTERNALS.md)** — Advanced testing utilities
