@@ -62,6 +62,23 @@ add_executable(rune src/main.c ${RUNE_SRC}
 # Link SDL3 and Vulkan libraries
 target_link_libraries(rune PRIVATE SDL3::SDL3 Vulkan::Vulkan)
 
+# ================================================================================================
+# tool targets
+# ================================================================================================
+
+# Header formatting tool
+add_executable(fmtheader tool/build/fmtheader.c)
+
+# Auto-format headers on build (optional - doesn't fail the build if it errors)
+add_custom_target(fmtheader_run ALL
+        COMMAND bash -c "$<TARGET_FILE:fmtheader> ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c || echo 'Warning: fmtheader failed (non-fatal)'"
+        DEPENDS fmtheader
+        COMMENT "Formatting source file headers (optional)..."
+)
+
+# Make sure fmtheader_run runs early
+add_dependencies(rune fmtheader_run)
+
 # ------------
 # test targets
 # ------------

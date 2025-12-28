@@ -11,7 +11,7 @@
  * Quick Reference:
  *
  *   Error API
- *   ---------
+ *   -------------------------------------------------------------------------------------------------------------------
  *   err_set(code, message)       Set error with automatic location capture
  *   err_get()                    Get most recent error context
  *   err_code()                   Get error code of most recent error
@@ -28,7 +28,7 @@
  *   r_error_message(code)        Get message for error code
  *
  *   Allocator API
- *   -------------
+ *   -------------------------------------------------------------------------------------------------------------------
  *   alloc_push(a)                Push allocator onto stack
  *   alloc_pop()                  Pop allocator from stack
  *   alloc_current()              Get current allocator
@@ -62,12 +62,12 @@
 #include <stdio.h>
 
 /*
- * ================================================================================================
+ * =====================================================================================================================
  * MACROS
- * ================================================================================================
+ * =====================================================================================================================
  */
 
-// --------- Token manipulation ---------
+// ------------------------------------------------ Token manipulation -------------------------------------------------
 
 #define R_GLUE_INTERN(a, b) a##b
 #define R_GLUE(a, b) R_GLUE_INTERN(a, b)
@@ -77,25 +77,25 @@
 #define R_VA_ARGS(...) __VA_OPT__(, ) __VA_ARGS__
 #define R_(name) R_JOIN(r, name, __)
 
-// --------- Numeric utilities ---------
+// ------------------------------------------------- Numeric utilities -------------------------------------------------
 
 #define R_MAX(a, b) ((a) > (b) ? (a) : (b))
 #define R_MIN(a, b) ((a) < (b) ? (a) : (b))
 #define R_CLAMP(val, min, max) ((val) < (min) ? (min) : ((val) > (max) ? (max) : (val)))
 
-// --------- Type adapters ---------
+// --------------------------------------------------- Type adapters ---------------------------------------------------
 
 #if defined(_MSC_VER)
-#define R_Atomic(type) type  // Fallback for MSVC where _Atomic may not be available
+#define R_Atomic(type) type // Fallback for MSVC where _Atomic may not be available
 #else
-#define R_Atomic(type) _Atomic(type)  // Use real _Atomic on GCC/Clang
+#define R_Atomic(type) _Atomic(type) // Use real _Atomic on GCC/Clang
 #endif
 
-// --------- Function wrapper macros ---------
+// ---------------------------------------------- Function wrapper macros ----------------------------------------------
 
 #define R_OPT(def, ...) __VA_OPT__(__VA_ARGS__) __VA_OPT__(def)
 
-// --------- Scope and allocator macros ---------
+// -------------------------------------------- Scope and allocator macros ---------------------------------------------
 // These macros implement RAII-style resource management using push/pop semantics.
 // The resource is pushed on entry and automatically popped on exit, even when exiting
 // via break, continue, or return.
@@ -125,16 +125,16 @@
 #define alloc_scope(a) scope(alloc_push, alloc_pop, a)
 
 /*
- * ================================================================================================
+ * =====================================================================================================================
  * TYPE DEFINITIONS
- * ================================================================================================
+ * =====================================================================================================================
  */
 
-// --------- Constants ---------
+// ----------------------------------------------------- Constants -----------------------------------------------------
 
 static constexpr char NULLTERM = '\0';
 
-// --------- Allocator interface ---------
+// ------------------------------------------------ Allocator interface ------------------------------------------------
 
 /**
  * Allocator interface with separate function pointers for clarity.
@@ -154,7 +154,7 @@ typedef struct {
     void * ctx;
 } allocator;
 
-// --------- Error codes ---------
+// ---------------------------------------------------- Error codes ----------------------------------------------------
 
 typedef enum {
     // Success
@@ -197,7 +197,7 @@ typedef enum {
     R_ERR_INVALID_UTF8 = 601,
 } r_error_code;
 
-// --------- Error context ---------
+// --------------------------------------------------- Error context ---------------------------------------------------
 
 typedef struct {
     const r_error_code code;    // Error code (immutable)
@@ -207,7 +207,7 @@ typedef struct {
     const char * const func;    // Function name where error occurred (immutable)
 } r_error_ctx;
 
-// --------- Error stack configuration ---------
+// --------------------------------------------- Error stack configuration ---------------------------------------------
 
 #ifdef RCFG__ERROR_STACK_MAX
 static constexpr int R_ERROR_STACK_MAX = RCFG__ERROR_STACK_MAX;
@@ -224,16 +224,16 @@ typedef struct {
 extern _Thread_local r_error_stack_t r_error_stack;
 
 /*
- * ================================================================================================
+ * =====================================================================================================================
  * ERROR HANDLING
- * ================================================================================================
+ * =====================================================================================================================
  */
 
-// --------- Message lookup ---------
+// -------------------------------------------------- Message lookup ---------------------------------------------------
 
 extern const char * r_error_message(r_error_code code);
 
-// --------- Error API: Setup & Reporting ---------
+// ------------------------------------------- Error API: Setup & Reporting --------------------------------------------
 
 #define err_set(code, message) R_(err_set)((code), (message), __FILE__, __LINE__, __func__)
 #define err_print(stream) R_(err_print)(stream)
@@ -243,7 +243,7 @@ extern bool R_(err_set)(r_error_code code, const char * message, const char * fi
 extern void R_(err_print)(FILE * stream);
 extern void R_(err_print_stack)(FILE * stream);
 
-// --------- Error API: Inspection ---------
+// ----------------------------------------------- Error API: Inspection -----------------------------------------------
 
 #define err_get() R_(err_get)()
 #define err_code() R_(err_code)()
@@ -258,7 +258,7 @@ extern const char * R_(err_msg)(void);
 extern bool R_(err_has)(void);
 extern int R_(err_depth)(void);
 
-// --------- Error API: Management ---------
+// ----------------------------------------------- Error API: Management -----------------------------------------------
 
 #define err_pop() R_(err_pop)()
 #define err_clear() R_(err_clear)()
@@ -270,7 +270,7 @@ extern void R_(err_clear)(void);
 extern void R_(err_enable)(bool enabled);
 extern bool R_(err_is_enabled)(void);
 
-// --------- Convenience macros ---------
+// ------------------------------------------------ Convenience macros -------------------------------------------------
 
 /**
  * Check if a pointer is null and set error if so.
@@ -328,12 +328,12 @@ extern bool R_(err_is_enabled)(void);
     } while (0)
 
 /*
- * ================================================================================================
+ * =====================================================================================================================
  * ALLOCATOR INTERFACE
- * ================================================================================================
+ * =====================================================================================================================
  */
 
-// --------- Stack configuration ---------
+// ------------------------------------------------ Stack configuration ------------------------------------------------
 
 #ifdef RCFG__ALLOC_STACK_MAX
 static constexpr int mem_alloc_STACK_MAX = RCFG__ALLOC_STACK_MAX;
@@ -341,13 +341,13 @@ static constexpr int mem_alloc_STACK_MAX = RCFG__ALLOC_STACK_MAX;
 static constexpr int mem_alloc_STACK_MAX = 16;
 #endif // RCFG__ALLOC_STACK_MAX
 
-// --------- Allocator API: Stack management ---------
+// ------------------------------------------ Allocator API: Stack management ------------------------------------------
 
 extern void alloc_push(allocator a);
 extern void alloc_pop(void);
 extern allocator alloc_current(void);
 
-// --------- Allocator API: Memory operations ---------
+// ----------------------------------------- Allocator API: Memory operations ------------------------------------------
 
 [[nodiscard]] extern void * mem_alloc(size_t size);
 [[nodiscard]] extern void * mem_alloc_zero(size_t size);

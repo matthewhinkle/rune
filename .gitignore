@@ -2,6 +2,10 @@
 cmake-build-*/
 build/
 
+# Exception: track tool/build sources
+!tool/build/
+!tool/build/*
+
 # CMake generated files
 CMakeCache.txt
 CMakeFiles/

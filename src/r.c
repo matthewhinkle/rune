@@ -15,16 +15,16 @@
 #include "r.h"
 
 /*
- * ================================================================================================
+ * =====================================================================================================================
  * ERROR HANDLING
- * ================================================================================================
+ * =====================================================================================================================
  */
 
-// --------- Thread-local storage ---------
+// ----------------------------------------------- Thread-local storage ------------------------------------------------
 
 _Thread_local r_error_stack_t r_error_stack = {.depth = 0, .enabled = true};
 
-// --------- API: Setup & Reporting ---------
+// ---------------------------------------------- API: Setup & Reporting -----------------------------------------------
 
 bool R_(err_set)(r_error_code code, const char * message, const char * file, int line, const char * func) {
     if (!r_error_stack.enabled || r_error_stack.depth >= R_ERROR_STACK_MAX) {
@@ -70,7 +70,7 @@ void R_(err_print_stack)(FILE * stream) {
     }
 }
 
-// --------- Message lookup ---------
+// -------------------------------------------------- Message lookup ---------------------------------------------------
 
 const char * r_error_message(r_error_code code) {
     switch (code) {
@@ -140,7 +140,7 @@ const char * r_error_message(r_error_code code) {
     }
 }
 
-// --------- API: Inspection ---------
+// -------------------------------------------------- API: Inspection --------------------------------------------------
 
 const r_error_ctx * R_(err_get)(void) {
     if (r_error_stack.depth == 0) {
@@ -174,7 +174,7 @@ const r_error_ctx * R_(err_at)(int index) {
     return &r_error_stack.stack[index];
 }
 
-// --------- API: Management ---------
+// -------------------------------------------------- API: Management --------------------------------------------------
 
 void R_(err_pop)(void) {
     if (r_error_stack.depth > 0) {
@@ -195,12 +195,12 @@ bool R_(err_is_enabled)(void) {
 }
 
 /*
- * ================================================================================================
+ * =====================================================================================================================
  * ALLOCATOR IMPLEMENTATION
- * ================================================================================================
+ * =====================================================================================================================
  */
 
-// --------- Thread-local storage ---------
+// ----------------------------------------------- Thread-local storage ------------------------------------------------
 
 typedef struct {
     allocator stack[mem_alloc_STACK_MAX];
@@ -209,7 +209,7 @@ typedef struct {
 
 static _Thread_local mem_alloc_stack_t mem_alloc_stack = {.depth = 0};
 
-// --------- Default allocator ---------
+// ------------------------------------------------- Default allocator -------------------------------------------------
 
 // ReSharper disable CppParameterMayBeConstPtrOrRef - match allocator struct function pointers
 static void * r_default_alloc(void * ctx, size_t size) {
@@ -247,7 +247,7 @@ const allocator r_default_allocator = {
     .ctx = nullptr,
 };
 
-// --------- API: Stack management ---------
+// ----------------------------------------------- API: Stack management -----------------------------------------------
 
 extern void alloc_push(allocator a) {
     if (mem_alloc_stack.depth >= mem_alloc_STACK_MAX) {
@@ -272,7 +272,7 @@ extern allocator alloc_current(void) {
     return mem_alloc_stack.stack[mem_alloc_stack.depth - 1];
 }
 
-// --------- API: Memory operations ---------
+// ---------------------------------------------- API: Memory operations -----------------------------------------------
 
 extern void * mem_alloc(size_t size) {
     const allocator a = alloc_current();
