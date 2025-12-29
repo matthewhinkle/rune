@@ -120,7 +120,8 @@
 //     // my_arena_allocator is now popped
 
 #define scope(push_fn, pop_fn, resource)                                                                               \
-    for (int R_UNIQUE(_scope_once) = (push_fn(resource), 1); R_UNIQUE(_scope_once); R_UNIQUE(_scope_once) = 0, pop_fn())
+    for (int R_UNIQUE(_scope_i) = 0; R_UNIQUE(_scope_i) < 1; R_UNIQUE(_scope_i) = (pop_fn(), 1))                       \
+        for (int R_UNIQUE(_scope_j) = (push_fn(resource), 1); R_UNIQUE(_scope_j); R_UNIQUE(_scope_j) = 0)
 
 #define alloc_scope(a) scope(alloc_push, alloc_pop, a)
 

@@ -118,24 +118,24 @@ add_dependencies(rune fmtheader_run)
 # ------------
 
 # Test executable for rune.h core functionality (22 tests, 217 assertions)
-add_executable(test_rune test/r_test.h test/test_r.c src/r.c)
+add_executable(test_rune test/test_r.c src/r.c)
 target_include_directories(test_rune PRIVATE ${CUNIT_INCLUDE_DIRS})
 target_link_libraries(test_rune PRIVATE ${CUNIT_LIBRARIES})
 
 # Test executable for coll.h collections (40 tests)
-add_executable(test_coll test/r_test.h test/test_coll.c src/r.c)
+add_executable(test_coll test/test_coll.c src/r.c)
 target_include_directories(test_coll PRIVATE ${CUNIT_INCLUDE_DIRS})
 target_link_libraries(test_coll PRIVATE ${CUNIT_LIBRARIES})
 
 # Test executable for tree.h red-black tree module
-add_executable(test_tree test/r_test.h test/test_tree.c src/r.c)
+add_executable(test_tree test/test_tree.c src/r.c)
 target_include_directories(test_tree PRIVATE ${CUNIT_INCLUDE_DIRS})
 target_link_libraries(test_tree PRIVATE ${CUNIT_LIBRARIES})
 # Suppress shadow warnings from complex rbt_remove macro expansions
 target_compile_options(test_tree PRIVATE -Wno-shadow)
 
 # Test executable for str.h string module (coverage pending)
-add_executable(test_str test/r_test.h test/test_str.c ${RUNE_SRC})
+add_executable(test_str test/test_str.c ${RUNE_SRC})
 target_include_directories(test_str PRIVATE ${CUNIT_INCLUDE_DIRS})
 target_link_libraries(test_str PRIVATE ${CUNIT_LIBRARIES})
 

@@ -4,8 +4,16 @@
 
 #include "../src/r.h"
 #include "CUnit/Basic.h"
-#include "r_test.h"
 #include "test.h"
+
+// Test-only access to internal allocator state
+extern _Thread_local struct {
+    allocator stack[mem_alloc_STACK_MAX];
+    int depth;
+} mem_alloc_stack;
+
+// Default allocator using malloc/realloc/free
+extern const allocator r_default_allocator;
 
 #include <assert.h>
 #include <stdlib.h>
