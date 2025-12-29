@@ -70,6 +70,7 @@ set(RUNE_SRC
 add_executable(rune src/main.c ${RUNE_SRC}
         src/hash.h
         src/hash.c
+        src/tree.h
 )
 
 # Link optional libraries
@@ -124,6 +125,13 @@ add_executable(test_coll test/r_test.h test/test_coll.c src/r.c)
 target_include_directories(test_coll PRIVATE ${CUNIT_INCLUDE_DIRS})
 target_link_libraries(test_coll PRIVATE ${CUNIT_LIBRARIES})
 
+# Test executable for tree.h red-black tree module
+add_executable(test_tree test/r_test.h test/test_tree.c src/r.c)
+target_include_directories(test_tree PRIVATE ${CUNIT_INCLUDE_DIRS})
+target_link_libraries(test_tree PRIVATE ${CUNIT_LIBRARIES})
+# Suppress shadow warnings from complex rbt_remove macro expansions
+target_compile_options(test_tree PRIVATE -Wno-shadow)
+
 # Test executable for str.h string module (coverage pending)
 add_executable(test_str test/r_test.h test/test_str.c ${RUNE_SRC})
 target_include_directories(test_str PRIVATE ${CUNIT_INCLUDE_DIRS})
@@ -138,9 +146,10 @@ target_link_libraries(test_hash PRIVATE ${CUNIT_LIBRARIES})
 add_custom_target(run_tests
         COMMAND test_rune
         COMMAND test_coll
+        COMMAND test_tree
         COMMAND test_str
         COMMAND test_hash
-        DEPENDS test_rune test_coll test_str test_hash
+        DEPENDS test_rune test_coll test_tree test_str test_hash
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         COMMENT "Running unit tests . . ."
 )
