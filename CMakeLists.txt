@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.31)
 project(rune C)
 
 set(CMAKE_C_STANDARD 23)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 
 # Suppress macro naming convention warnings across all compilers
 if (MSVC)
@@ -11,14 +12,25 @@ else ()
 endif ()
 
 # ================================================================================================
+# Build options
+# ================================================================================================
+
+option(ENABLE_SDL3 "Enable SDL3 support" OFF)
+option(ENABLE_VULKAN "Enable Vulkan support" OFF)
+
+# ================================================================================================
 # rune target
 # ================================================================================================
 
-# Find SDL3 package
-find_package(SDL3 CONFIG REQUIRED)
+# Find SDL3 package (optional)
+if (ENABLE_SDL3)
+    find_package(SDL3 CONFIG REQUIRED)
+endif()
 
-# Find Vulkan
-find_package(Vulkan REQUIRED)
+# Find Vulkan (optional)
+if (ENABLE_VULKAN)
+    find_package(Vulkan REQUIRED)
+endif()
 
 # Find CUnit - portable across platforms
 find_path(CUNIT_INCLUDE_DIR NAMES CUnit/CUnit.h)
@@ -59,8 +71,14 @@ add_executable(rune src/main.c ${RUNE_SRC}
         src/hash.h
         src/hash.c)
 
-# Link SDL3 and Vulkan libraries
-target_link_libraries(rune PRIVATE SDL3::SDL3 Vulkan::Vulkan)
+# Link optional libraries
+if (ENABLE_SDL3)
+    target_link_libraries(rune PRIVATE SDL3::SDL3)
+endif()
+
+if (ENABLE_VULKAN)
+    target_link_libraries(rune PRIVATE Vulkan::Vulkan)
+endif()
 
 # ================================================================================================
 # tool targets
@@ -69,12 +87,24 @@ target_link_libraries(rune PRIVATE SDL3::SDL3 Vulkan::Vulkan)
 # Header formatting tool
 add_executable(fmtheader tool/build/fmtheader.c)
 
+# Expand glob patterns for cross-platform compatibility
+file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
+file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
+
 # Auto-format headers on build (optional - doesn't fail the build if it errors)
-add_custom_target(fmtheader_run ALL
-        COMMAND bash -c "$<TARGET_FILE:fmtheader> ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c || echo 'Warning: fmtheader failed (non-fatal)'"
-        DEPENDS fmtheader
-        COMMENT "Formatting source file headers (optional)..."
-)
+if (NOT WIN32)
+    add_custom_target(fmtheader_run ALL
+            COMMAND bash -c "$<TARGET_FILE:fmtheader> ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c || echo 'Warning: fmtheader failed (non-fatal)'"
+            DEPENDS fmtheader
+            COMMENT "Formatting source file headers (optional)..."
+    )
+else ()
+    add_custom_target(fmtheader_run ALL
+            COMMAND $<TARGET_FILE:fmtheader> ${HEADER_FILES} ${SOURCE_FILES}
+            DEPENDS fmtheader
+            COMMENT "Formatting source file headers (optional)..."
+    )
+endif ()
 
 # Make sure fmtheader_run runs early
 add_dependencies(rune fmtheader_run)
@@ -99,7 +129,7 @@ target_include_directories(test_str PRIVATE ${CUNIT_INCLUDE_DIRS})
 target_link_libraries(test_str PRIVATE ${CUNIT_LIBRARIES})
 
 # Test executable for hash.h hash module
-add_executable(test_hash test/test.h test/test_hash.c src/r.c src/hash.c)
+add_executable(test_hash test/test.h test/test_hash.c src/r.c src/str.c src/hash.c)
 target_include_directories(test_hash PRIVATE ${CUNIT_INCLUDE_DIRS})
 target_link_libraries(test_hash PRIVATE ${CUNIT_LIBRARIES})
 

@@ -5,9 +5,16 @@
 #include "str.h"
 
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifdef _WIN32
+    typedef int64_t ssize_t;
+#else
+    #include <sys/types.h>
+#endif
 
 // =====================================================================================================================
 // Internal: FNV-1a hashing

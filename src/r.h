@@ -85,10 +85,10 @@
 
 // --------------------------------------------------- Type adapters ---------------------------------------------------
 
-#if defined(_MSC_VER)
-#define R_Atomic(type) type // Fallback for MSVC where _Atomic may not be available
+#if defined(__clang__) || defined(__GNUC__)
+#define R_Atomic(type) _Atomic(type) // Use real _Atomic on Clang/GCC
 #else
-#define R_Atomic(type) _Atomic(type) // Use real _Atomic on GCC/Clang
+#define R_Atomic(type) type // Fallback for MSVC where _Atomic may not be available
 #endif
 
 // ---------------------------------------------- Function wrapper macros ----------------------------------------------

@@ -344,6 +344,7 @@ extern uint64_t xxhash64(const void * data, size_t size, uint64_t seed) {
 
     // Process by 8-byte blocks if we have enough data
     if (size >= 32) {
+        const uint8_t * start = bytes;
         const uint8_t * limit = bytes + size - 32;
         uint64_t v1 = seed + XX64_PRIME1 + XX64_PRIME2;
         uint64_t v2 = seed + XX64_PRIME2;
@@ -364,6 +365,8 @@ extern uint64_t xxhash64(const void * data, size_t size, uint64_t seed) {
         h64 = (h64 ^ xx64_round(0, v2)) * XX64_PRIME1 + XX64_PRIME4;
         h64 = (h64 ^ xx64_round(0, v3)) * XX64_PRIME1 + XX64_PRIME4;
         h64 = (h64 ^ xx64_round(0, v4)) * XX64_PRIME1 + XX64_PRIME4;
+
+        size -= (bytes - start);
     } else {
         h64 = seed + XX64_PRIME5;
     }

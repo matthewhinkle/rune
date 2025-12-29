@@ -2,6 +2,8 @@
 
 A C23 library experimenting with foundational primitives found in higher-level languages.
 
+[![codecov](https://codecov.io/gh/matthewhinkle/rune/branch/master/graph/badge.svg)](https://codecov.io/gh/matthewhinkle/rune)
+
 ## Features
 
 - **Strings** — Creation, manipulation, searching, hashing

@@ -1,0 +1,68 @@
+name: Code Coverage
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  coverage:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install CUnit (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libcunit1-dev lcov
+
+    - name: Install CUnit (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew install cunit lcov
+
+    - name: Install Clang, Ninja, and CUnit (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        choco install llvm ninja -y
+        vcpkg install cunit:x64-windows
+
+    - name: Create build directory
+      run: mkdir -p build
+
+    - name: Configure CMake (Unix-like)
+      if: runner.os != 'Windows'
+      working-directory: build
+      run: cmake -DCMAKE_C_FLAGS="-fprofile-arcs -ftest-coverage" ..
+
+    - name: Configure CMake (Windows with Clang and Ninja)
+      if: runner.os == 'Windows'
+      working-directory: build
+      run: cmake -G Ninja -DCMAKE_C_COMPILER="C:/Program Files/LLVM/bin/clang.exe" -DCMAKE_TOOLCHAIN_FILE="C:/vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_C_FLAGS="-fprofile-arcs -ftest-coverage" ..
+
+    - name: Build
+      working-directory: build
+      run: cmake --build .
+
+    - name: Generate coverage report (Unix-like)
+      if: runner.os != 'Windows'
+      run: |
+        lcov --directory build --capture --output-file coverage.info
+        lcov --remove coverage.info '/usr/*' '**/build/*' --output-file coverage.info --ignore-errors unused
+        lcov --list coverage.info
+
+    - name: Upload coverage to Codecov (Ubuntu only)
+      if: runner.os == 'Linux'
+      uses: codecov/codecov-action@v3
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage.info
+        flags: unittests
+        name: codecov-${{ matrix.os }}
+        verbose: true
