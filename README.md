@@ -4,6 +4,9 @@ A C23 library experimenting with foundational primitives found in higher-level l
 
 [![Build Status](https://github.com/matthewhinkle/rune/actions/workflows/coverage.yml/badge.svg)](https://github.com/matthewhinkle/rune/actions/workflows/coverage.yml)
 [![codecov](https://codecov.io/gh/matthewhinkle/rune/branch/master/graph/badge.svg)](https://codecov.io/gh/matthewhinkle/rune)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Language: C23](https://img.shields.io/badge/Language-C23-blue)](https://en.cppreference.com/w/c/23)
+[![Platforms: Linux | macOS | Windows](https://img.shields.io/badge/Platforms-Linux%20%7C%20macOS%20%7C%20Windows-success)](https://github.com/matthewhinkle/rune/actions/workflows/coverage.yml)
 
 ## Features
 
