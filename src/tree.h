@@ -57,7 +57,11 @@
 #ifndef RUNE_BST_API
 #define RUNE_BST_API
 
-#define R_BST_CMP(t, a, b) ((t)->cmp_fn == nullptr ? ((a) > (b)) - ((a) < (b)) : (t)->cmp_fn((a), (b)))
+/* R_BST_CMP with optional comparator - selects implementation based on arg count */
+#define _R_BST_CMP_DEFAULT(a, b) (((a) > (b)) - ((a) < (b)))
+#define _R_BST_CMP_CUSTOM(a, b, cmp) ((cmp)((a), (b)))
+#define _R_BST_CMP_SELECT(_1, _2, _3, N, ...) N
+#define R_BST_CMP(...) _R_BST_CMP_SELECT(__VA_ARGS__, _R_BST_CMP_CUSTOM, _R_BST_CMP_DEFAULT)(__VA_ARGS__)
 
 #define R_BST_ISLEFT(node) (node)->parent != nullptr && (node)->parent->left == (node)
 
@@ -70,11 +74,12 @@
         /* return */ cur;                                                                                              \
     })
 
-#define bst_find(t, val)                                                                                               \
+#define bst_find(t, val, ...)                                                                                          \
     ({                                                                                                                 \
         auto search_cur = (t)->root;                                                                                   \
-        while (search_cur != nullptr && R_BST_CMP((t), (val), search_cur->data) != 0) {                                \
-            search_cur = R_BST_CMP((t), (val), search_cur->data) < 0 ? search_cur->left : search_cur->right;           \
+        while (search_cur != nullptr && R_BST_CMP((val), search_cur->data __VA_OPT__(, ) __VA_ARGS__) != 0) {          \
+            search_cur = R_BST_CMP((val), search_cur->data __VA_OPT__(, ) __VA_ARGS__) < 0 ? search_cur->left          \
+                                                                                           : search_cur->right;        \
         }                                                                                                              \
         /* return */ search_cur;                                                                                       \
     })
@@ -149,8 +154,8 @@
 
 #define bst_remove(t, node)                                                                                            \
     ({                                                                                                                 \
-        typeof_unqual(node) suc = nullptr;                                                                             \
-        typeof_unqual(node) node_to_free = (node);                                                                     \
+        typeof_unqual((node)) suc = nullptr;                                                                           \
+        typeof_unqual((node)) node_to_free = (node);                                                                   \
         if ((node)->left == nullptr) {                                                                                 \
             suc = (node)->right;                                                                                       \
             R_BST_REPLACE((t), (node), (node)->right);                                                                 \
@@ -167,7 +172,7 @@
         node_to_free->left = nullptr;                                                                                  \
         node_to_free->right = nullptr;                                                                                 \
         node_to_free->parent = nullptr;                                                                                \
-        (t)->node_free_fn(node_to_free);                                                                               \
+        mem_free(node_to_free, (t)->node_size);                                                                        \
         /* return */ suc;                                                                                              \
     })
 
@@ -189,21 +194,16 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
 
 #define RBT(type) R_GLUE(rbt_, type)
 #define RBT_NODE(type) R_GLUE(rbt_node_, type)
-#define R_RBT_FREE(type) R_GLUE(RBT(type), _free)
-#define R_RBT_NODE_NEW(type) R_GLUE(RBT_NODE(type), _new)
-#define R_RBT_NODE_FREE(type) R_GLUE(RBT_NODE(type), _free)
 
-#define rbt(type, ...)                                                                                                 \
-    {.root = nullptr,                                                                                                  \
-     .node_fn = R_RBT_NODE_NEW(type),                                                                                  \
-     .node_free_fn = R_RBT_NODE_FREE(type) __VA_OPT__(, .cmp_fn = __VA_ARGS__)}
+#define rbt(type) {.root = nullptr, .node_size = sizeof(struct RBT_NODE(type))}
 
-#define R_RBT_PARENT(t, val, out_dir)                                                                                  \
+#define R_RBT_PARENT(t, val, out_dir, ...)                                                                             \
     ({                                                                                                                 \
         typeof_unqual((t)->root) search_parent = nullptr;                                                              \
         auto search_cur = (t)->root;                                                                                   \
         int cmp_result = 0;                                                                                            \
-        while (search_cur != nullptr && (cmp_result = R_BST_CMP((t), (val), search_cur->data)) != 0) {                 \
+        while (search_cur != nullptr &&                                                                                \
+               (cmp_result = R_BST_CMP((val), search_cur->data __VA_OPT__(, ) __VA_ARGS__)) != 0) {                    \
             search_parent = search_cur;                                                                                \
             search_cur = cmp_result < 0 ? search_cur->left : search_cur->right;                                        \
         }                                                                                                              \
@@ -290,19 +290,20 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
     (R_BST_ISLEFT((node)) ? ((node)->parent->right != nullptr ? (node)->parent->right->color : R_(rbt_black))          \
                           : ((node)->parent->left != nullptr ? (node)->parent->left->color : R_(rbt_black)))
 
-#define rbt_contains(t, val) (((t) != nullptr) && (bst_find((t), (val)) != nullptr))
+/* rbt_contains: optional comparator */
+#define rbt_contains(t, val, ...) (((t) != nullptr) && (bst_find((t), (val), __VA_ARGS__) != nullptr))
 
-#define rbt_insert(t, val)                                                                                             \
+#define rbt_insert(t, val, ...)                                                                                        \
     ({                                                                                                                 \
         if ((t) != nullptr) {                                                                                          \
             /* 1 - find the parent and direction */                                                                    \
             enum rbt_dir dir = R_(rbt_exists);                                                                         \
-            auto parent = R_RBT_PARENT((t), (val), &dir);                                                              \
+            auto parent = R_RBT_PARENT((t), (val), &dir __VA_OPT__(, ) __VA_ARGS__);                                   \
                                                                                                                        \
             /* 2 - check if the node already exists */                                                                 \
             if (dir != R_(rbt_exists)) {                                                                               \
                 /* 3 - create the new node */                                                                          \
-                auto new_node = (t)->node_fn(val);                                                                     \
+                typeof_unqual((t)->root) new_node = mem_alloc_zero((t)->node_size);                                    \
                 new_node->color = R_(rbt_red);                                                                         \
                 new_node->data = (val);                                                                                \
                                                                                                                        \
@@ -521,11 +522,11 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
         }                                                                                                              \
     })
 
-#define rbt_remove(t, val)                                                                                             \
+#define rbt_remove(t, val, ...)                                                                                        \
     ({                                                                                                                 \
         typeof_unqual((t)->root) node = nullptr;                                                                       \
         if ((t) != nullptr) {                                                                                          \
-            node = bst_find((t), (val));                                                                               \
+            node = bst_find((t), (val), __VA_ARGS__);                                                                  \
             if (node != nullptr) {                                                                                     \
                 const enum rbt_color node_color = node->color;                                                         \
                 typeof_unqual((t)->root) parent = node->parent;                                                        \
@@ -758,22 +759,7 @@ struct RBT_NODE(T) {
 
 typedef struct {
     struct RBT_NODE(T) * root;
-    int (*cmp_fn)(T a, T b);
-    struct RBT_NODE(T) * (*node_fn)(T data);
-    void (*node_free_fn)(struct RBT_NODE(T) * node);
+    const size_t node_size;
 } RBT(T);
-
-static struct RBT_NODE(T) * R_RBT_NODE_NEW(T)(T data) {
-    struct RBT_NODE(T) * node = mem_alloc_zero(sizeof(struct RBT_NODE(T)));
-    node->color = R_(rbt_red);
-    node->data = data;
-    return node;
-}
-
-static void R_RBT_NODE_FREE(T)(struct RBT_NODE(T) * node) {
-    if (node != nullptr) {
-        mem_free(node, sizeof(struct RBT_NODE(T)));
-    }
-}
 
 #endif // T

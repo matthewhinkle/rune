@@ -1238,27 +1238,27 @@ static int rbt_tree_cmp_reverse(int a, int b) {
 }
 
 static void rbt__with_custom_comparator__should_use_custom_comparison(void) {
-    // Create tree with reverse comparator
-    RBT(int) tree = rbt(int, rbt_tree_cmp_reverse);
+    // Create tree (comparator passed per-operation now)
+    RBT(int) tree = rbt(int);
 
-    // Insert values
-    rbt_insert(&tree, 5);
-    rbt_insert(&tree, 3);
-    rbt_insert(&tree, 7);
-    rbt_insert(&tree, 1);
-    rbt_insert(&tree, 9);
+    // Insert values with custom comparator
+    rbt_insert(&tree, 5, rbt_tree_cmp_reverse);
+    rbt_insert(&tree, 3, rbt_tree_cmp_reverse);
+    rbt_insert(&tree, 7, rbt_tree_cmp_reverse);
+    rbt_insert(&tree, 1, rbt_tree_cmp_reverse);
+    rbt_insert(&tree, 9, rbt_tree_cmp_reverse);
 
-    // All values should be found
-    CU_ASSERT_TRUE(rbt_contains(&tree, 1));
-    CU_ASSERT_TRUE(rbt_contains(&tree, 3));
-    CU_ASSERT_TRUE(rbt_contains(&tree, 5));
-    CU_ASSERT_TRUE(rbt_contains(&tree, 7));
-    CU_ASSERT_TRUE(rbt_contains(&tree, 9));
+    // All values should be found (using same comparator)
+    CU_ASSERT_TRUE(rbt_contains(&tree, 1, rbt_tree_cmp_reverse));
+    CU_ASSERT_TRUE(rbt_contains(&tree, 3, rbt_tree_cmp_reverse));
+    CU_ASSERT_TRUE(rbt_contains(&tree, 5, rbt_tree_cmp_reverse));
+    CU_ASSERT_TRUE(rbt_contains(&tree, 7, rbt_tree_cmp_reverse));
+    CU_ASSERT_TRUE(rbt_contains(&tree, 9, rbt_tree_cmp_reverse));
 
     // Values not inserted should not be found
-    CU_ASSERT_FALSE(rbt_contains(&tree, 2));
-    CU_ASSERT_FALSE(rbt_contains(&tree, 4));
-    CU_ASSERT_FALSE(rbt_contains(&tree, 6));
+    CU_ASSERT_FALSE(rbt_contains(&tree, 2, rbt_tree_cmp_reverse));
+    CU_ASSERT_FALSE(rbt_contains(&tree, 4, rbt_tree_cmp_reverse));
+    CU_ASSERT_FALSE(rbt_contains(&tree, 6, rbt_tree_cmp_reverse));
 
     // Check tree structure is valid despite custom comparator
     CU_ASSERT(rbt_tree_check_no_red_red(tree.root));
