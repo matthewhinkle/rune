@@ -198,7 +198,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
 #define RBT(type) R_GLUE(rbt_, type)
 #define RBT_NODE(type) R_GLUE(rbt_node_, type)
 
-#define rbt(type) {.root = nullptr, .node_size = sizeof(struct RBT_NODE(type))}
+#define rbt(type) {.root = nullptr, .node_size = sizeof(struct RBT_NODE(type)), .size = 0}
 
 #define R_RBT_PARENT(t, val, out_dir, ...)                                                                             \
     ({                                                                                                                 \
@@ -309,6 +309,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
                 typeof_unqual((t)->root) new_node = mem_alloc_zero((t)->node_size);                                    \
                 new_node->color = R_(rbt_red);                                                                         \
                 new_node->data = (val);                                                                                \
+                (t)->size++;                                                                                           \
                                                                                                                        \
                 /* 4 - check if the tree is empty */                                                                   \
                 if (parent == nullptr) {                                                                               \
@@ -531,6 +532,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
         if ((t) != nullptr) {                                                                                          \
             node = bst_find((t), (val), __VA_ARGS__);                                                                  \
             if (node != nullptr) {                                                                                     \
+                (t)->size--;                                                                                           \
                 const enum rbt_color node_color = node->color;                                                         \
                 typeof_unqual((t)->root) parent = node->parent;                                                        \
                 const bool is_left_child = parent != nullptr && R_BST_ISLEFT(node);                                    \
@@ -763,7 +765,7 @@ struct RBT_NODE(T) {
 typedef struct {
     struct RBT_NODE(T) * root;
     const size_t node_size;
-    const size_t size;
+    size_t size;
 } RBT(T);
 
 #endif // T

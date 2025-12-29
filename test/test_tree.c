@@ -1229,6 +1229,198 @@ static void rbt_remove__for_stress_test_insert_remove_patterns__should_maintain_
 }
 
 // ===============================
+// RBT SIZE FIELD TRACKING TESTS
+// ===============================
+
+static void rbt_size__for_empty_tree__should_be_zero(void) {
+    // Arrange
+    RBT(int) tree = rbt(int);
+
+    // Act & Assert
+    CU_ASSERT_EQUAL(tree.size, 0);
+
+    // Cleanup
+    rbt_tree_free_tree(tree.root);
+}
+
+static void rbt_size__after_single_insert__should_be_one(void) {
+    // Arrange
+    RBT(int) tree = rbt(int);
+
+    // Act
+    rbt_insert(&tree, 42);
+
+    // Assert
+    CU_ASSERT_EQUAL(tree.size, 1);
+
+    // Cleanup
+    rbt_tree_free_tree(tree.root);
+}
+
+static void rbt_size__after_multiple_inserts__should_match_node_count(void) {
+    // Arrange
+    RBT(int) tree = rbt(int);
+    int values[] = {50, 25, 75, 12, 37, 62, 87};
+    size_t count = sizeof(values) / sizeof(values[0]);
+
+    // Act
+    for (size_t i = 0; i < count; i++) {
+        rbt_insert(&tree, values[i]);
+    }
+
+    // Assert
+    CU_ASSERT_EQUAL(tree.size, count);
+    CU_ASSERT_EQUAL(tree.size, rbt_tree_count_nodes(tree.root));
+
+    // Cleanup
+    rbt_tree_free_tree(tree.root);
+}
+
+static void rbt_size__after_duplicate_insert__should_not_change(void) {
+    // Arrange
+    RBT(int) tree = rbt(int);
+    rbt_insert(&tree, 42);
+    size_t size_before = tree.size;
+
+    // Act
+    rbt_insert(&tree, 42);
+    rbt_insert(&tree, 42);
+
+    // Assert
+    CU_ASSERT_EQUAL(tree.size, size_before);
+    CU_ASSERT_EQUAL(tree.size, 1);
+
+    // Cleanup
+    rbt_tree_free_tree(tree.root);
+}
+
+static void rbt_size__after_single_remove__should_decrement(void) {
+    // Arrange
+    RBT(int) tree = rbt(int);
+    rbt_insert(&tree, 42);
+    CU_ASSERT_EQUAL(tree.size, 1);
+
+    // Act
+    rbt_remove(&tree, 42);
+
+    // Assert
+    CU_ASSERT_EQUAL(tree.size, 0);
+
+    // Cleanup
+    rbt_tree_free_tree(tree.root);
+}
+
+static void rbt_size__after_multiple_removes__should_match_remaining_count(void) {
+    // Arrange
+    RBT(int) tree = rbt(int);
+    int values[] = {50, 25, 75, 12, 37, 62, 87};
+    size_t count = sizeof(values) / sizeof(values[0]);
+    for (size_t i = 0; i < count; i++) {
+        rbt_insert(&tree, values[i]);
+    }
+
+    // Act & Assert - Remove each value and check size
+    for (size_t i = 0; i < count; i++) {
+        CU_ASSERT_EQUAL(tree.size, count - i);
+        rbt_remove(&tree, values[i]);
+        CU_ASSERT_EQUAL(tree.size, count - i - 1);
+    }
+
+    CU_ASSERT_EQUAL(tree.size, 0);
+
+    // Cleanup
+    rbt_tree_free_tree(tree.root);
+}
+
+static void rbt_size__after_sequential_operations__should_track_correctly(void) {
+    // Arrange
+    RBT(int) tree = rbt(int);
+
+    // Act & Assert - Insert 1-10
+    for (int i = 1; i <= 10; i++) {
+        rbt_insert(&tree, i);
+        CU_ASSERT_EQUAL(tree.size, (size_t)i);
+    }
+
+    // Remove 1, 3, 5, 7, 9 (odd numbers)
+    for (int i = 1; i <= 10; i += 2) {
+        size_t size_before = tree.size;
+        rbt_remove(&tree, i);
+        CU_ASSERT_EQUAL(tree.size, size_before - 1);
+    }
+
+    // Should have 5 elements left (2, 4, 6, 8, 10)
+    CU_ASSERT_EQUAL(tree.size, 5);
+    CU_ASSERT_EQUAL(tree.size, rbt_tree_count_nodes(tree.root));
+
+    // Insert 11-15
+    for (int i = 11; i <= 15; i++) {
+        rbt_insert(&tree, i);
+    }
+
+    CU_ASSERT_EQUAL(tree.size, 10);
+    CU_ASSERT_EQUAL(tree.size, rbt_tree_count_nodes(tree.root));
+
+    // Cleanup
+    rbt_tree_free_tree(tree.root);
+}
+
+static void rbt_size__after_stress_test__should_remain_consistent(void) {
+    // Arrange
+    RBT(int) tree = rbt(int);
+
+    // Act - Insert 1-20
+    for (int i = 1; i <= 20; i++) {
+        rbt_insert(&tree, i);
+    }
+    CU_ASSERT_EQUAL(tree.size, 20);
+
+    // Remove odd numbers (1, 3, 5, ... 19)
+    for (int i = 1; i <= 20; i += 2) {
+        rbt_remove(&tree, i);
+    }
+    CU_ASSERT_EQUAL(tree.size, 10);
+
+    // Insert 21-25
+    for (int i = 21; i <= 25; i++) {
+        rbt_insert(&tree, i);
+    }
+    CU_ASSERT_EQUAL(tree.size, 15);
+
+    // Verify even numbers 2-20 remain
+    for (int i = 2; i <= 20; i += 2) {
+        CU_ASSERT_TRUE(rbt_contains(&tree, i));
+    }
+
+    // Verify 21-25 exist
+    for (int i = 21; i <= 25; i++) {
+        CU_ASSERT_TRUE(rbt_contains(&tree, i));
+    }
+
+    CU_ASSERT_EQUAL(tree.size, rbt_tree_count_nodes(tree.root));
+
+    // Cleanup
+    rbt_tree_free_tree(tree.root);
+}
+
+static void rbt_size__after_removing_nonexistent_value__should_not_change(void) {
+    // Arrange
+    RBT(int) tree = rbt(int);
+    rbt_insert(&tree, 42);
+    size_t size_before = tree.size;
+
+    // Act
+    rbt_remove(&tree, 99); // Value not in tree
+
+    // Assert
+    CU_ASSERT_EQUAL(tree.size, size_before);
+    CU_ASSERT_EQUAL(tree.size, 1);
+
+    // Cleanup
+    rbt_tree_free_tree(tree.root);
+}
+
+// ===============================
 // RBT WITH CUSTOM COMPARATOR TESTS
 // ===============================
 
@@ -1334,6 +1526,17 @@ int main(void) {
     ADD_TEST(suite, rbt_remove__for_removing_every_other_element__should_maintain_balance);
     ADD_TEST(suite, rbt_remove__for_deletion_of_root__should_promote_successor);
     ADD_TEST(suite, rbt_remove__for_stress_test_insert_remove_patterns__should_maintain_invariants);
+
+    // RBT size field tracking tests
+    ADD_TEST(suite, rbt_size__for_empty_tree__should_be_zero);
+    ADD_TEST(suite, rbt_size__after_single_insert__should_be_one);
+    ADD_TEST(suite, rbt_size__after_multiple_inserts__should_match_node_count);
+    ADD_TEST(suite, rbt_size__after_duplicate_insert__should_not_change);
+    ADD_TEST(suite, rbt_size__after_single_remove__should_decrement);
+    ADD_TEST(suite, rbt_size__after_multiple_removes__should_match_remaining_count);
+    ADD_TEST(suite, rbt_size__after_sequential_operations__should_track_correctly);
+    ADD_TEST(suite, rbt_size__after_stress_test__should_remain_consistent);
+    ADD_TEST(suite, rbt_size__after_removing_nonexistent_value__should_not_change);
 
     // RBT custom comparator tests
     ADD_TEST(suite, rbt__with_custom_comparator__should_use_custom_comparison);
