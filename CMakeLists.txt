@@ -94,17 +94,19 @@ add_executable(fmtheader tool/build/fmtheader.c)
 # Expand glob patterns for cross-platform compatibility
 file(GLOB HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
+file(GLOB TEST_HEADER_FILES "${CMAKE_CURRENT_SOURCE_DIR}/test/*.h")
+file(GLOB TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/test/*.c")
 
 # Auto-format headers on build (optional - doesn't fail the build if it errors)
 if (NOT WIN32)
     add_custom_target(fmtheader_run ALL
-            COMMAND bash -c "$<TARGET_FILE:fmtheader> ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c || echo 'Warning: fmtheader failed (non-fatal)'"
+            COMMAND bash -c "$<TARGET_FILE:fmtheader> ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h ${CMAKE_CURRENT_SOURCE_DIR}/src/*.c ${CMAKE_CURRENT_SOURCE_DIR}/test/*.h ${CMAKE_CURRENT_SOURCE_DIR}/test/*.c || echo 'Warning: fmtheader failed (non-fatal)'"
             DEPENDS fmtheader
             COMMENT "Formatting source file headers (optional)..."
     )
 else ()
     add_custom_target(fmtheader_run ALL
-            COMMAND $<TARGET_FILE:fmtheader> ${HEADER_FILES} ${SOURCE_FILES}
+            COMMAND $<TARGET_FILE:fmtheader> ${HEADER_FILES} ${SOURCE_FILES} ${TEST_HEADER_FILES} ${TEST_FILES}
             DEPENDS fmtheader
             COMMENT "Formatting source file headers (optional)..."
     )

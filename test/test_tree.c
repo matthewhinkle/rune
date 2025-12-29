@@ -18,9 +18,9 @@
 #include "../src/tree.h"
 #undef T
 
-// ===============================
+// =====================================================================================================================
 // RBT helper functions
-// ===============================
+// =====================================================================================================================
 
 // Count nodes in a subtree
 static size_t rbt_tree_count_nodes(const struct RBT_NODE(int) * node) {
@@ -103,9 +103,9 @@ static bool rbt_tree_check_bst(const struct RBT_NODE(int) * node, int min_val, i
     return rbt_tree_check_bst(node->left, min_val, node->data) && rbt_tree_check_bst(node->right, node->data, max_val);
 }
 
-// ===============================
+// =====================================================================================================================
 // BST API tests
-// ===============================
+// =====================================================================================================================
 
 static void bst_min__for_single_node__should_return_node(void) {
     // Arrange
@@ -344,9 +344,9 @@ static void bst_remove__for_sequential_removal__should_maintain_bst_property(voi
     rbt_tree_free_tree(tree.root);
 }
 
-// ===============================
+// =====================================================================================================================
 // RBT contains tests
-// ===============================
+// =====================================================================================================================
 
 static void rbt_contains__for_empty_tree__should_return_false(void) {
     // Arrange
@@ -576,9 +576,9 @@ static void rbt_contains__for_boundary_values__should_find_extremes(void) {
     rbt_tree_free_tree(tree.root);
 }
 
-// ===============================
+// =====================================================================================================================
 // RBT insertion tests
-// ===============================
+// =====================================================================================================================
 
 static void rbt_insert__for_empty_tree__should_create_root_node(void) {
     // Arrange
@@ -887,9 +887,9 @@ static void rbt_insert__for_mixed_insertion_pattern__should_maintain_all_invaria
     rbt_tree_free_tree(tree.root);
 }
 
-// ===============================
+// =====================================================================================================================
 // RBT removal tests
-// ===============================
+// =====================================================================================================================
 
 static void rbt_remove__for_empty_tree__should_handle_gracefully(void) {
     // Arrange
@@ -1228,9 +1228,9 @@ static void rbt_remove__for_stress_test_insert_remove_patterns__should_maintain_
     rbt_tree_free_tree(tree.root);
 }
 
-// ===============================
+// =====================================================================================================================
 // RBT SIZE FIELD TRACKING TESTS
-// ===============================
+// =====================================================================================================================
 
 static void rbt_size__for_empty_tree__should_be_zero(void) {
     // Arrange
@@ -1420,9 +1420,9 @@ static void rbt_size__after_removing_nonexistent_value__should_not_change(void) 
     rbt_tree_free_tree(tree.root);
 }
 
-// ===============================
+// =====================================================================================================================
 // RBT WITH CUSTOM COMPARATOR TESTS
-// ===============================
+// =====================================================================================================================
 
 // Custom comparator for reverse order (descending)
 static int rbt_tree_cmp_reverse(int a, int b) {
@@ -1460,9 +1460,9 @@ static void rbt__with_custom_comparator__should_use_custom_comparison(void) {
     rbt_tree_free_tree(tree.root);
 }
 
-// ---------------
+// ---------------------------------------------------------------------------------------------------------------------
 // main
-// ---------------
+// ---------------------------------------------------------------------------------------------------------------------
 
 int main(void) {
     if (CUE_SUCCESS != CU_initialize_registry()) {
