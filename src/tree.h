@@ -4,7 +4,7 @@
  * Provides:
  *   - Self-balancing binary search tree with O(log n) operations
  *   - Generic type support via macro-based template expansion
- *   - Custom comparator support with default numeric comparison
+ *   - Custom comparator support per operation with default numeric comparison
  *   - Efficient insertion, search, and deletion operations
  *   - Proper handling of red-black tree invariants
  *
@@ -12,22 +12,22 @@
  *
  *   Red-Black Tree API
  *   -------------------------------------------------------------------------------------------------------------------
- *   rbt(type, ...)           Create empty tree (cmp_fn optional, defaults to numeric comparison)
- *   rbt_contains(t, val)     Check if value exists
- *   rbt_insert(t, val)       Insert value (ignored if duplicate)
- *   rbt_remove(t, val)       Remove value from tree
+ *   rbt(type)                   Create empty tree
+ *   rbt_contains(t, val, ...)   Check if value exists (optional comparator)
+ *   rbt_insert(t, val, ...)     Insert value, ignored if duplicate (optional comparator)
+ *   rbt_remove(t, val, ...)     Remove value from tree (optional comparator)
  *
  *   BST Helper API
  *   -------------------------------------------------------------------------------------------------------------------
- *   bst_min(node)            Find minimum node in subtree
- *   bst_find(t, val)         Find node with value in tree
- *   bst_remove(t, node)      Remove specific node from tree (internal use)
+ *   bst_min(node)               Find minimum node in subtree
+ *   bst_find(t, val, ...)       Find node with value in tree (optional comparator)
+ *   bst_remove(t, node)         Remove specific node from tree (internal use)
  *
  * Example:
- *   // Basic tree usage
+ *   // Basic tree usage with default numeric comparison
  *   #define T int
  *   #include "tree.h"
- *   RBT(int) tree = rbt(int);  // Uses default numeric comparison
+ *   RBT(int) tree = rbt(int);
  *   rbt_insert(&tree, 5);
  *   rbt_insert(&tree, 3);
  *   rbt_insert(&tree, 7);
@@ -35,10 +35,13 @@
  *   rbt_remove(&tree, 3);
  *   #undef T
  *
- *   // With custom comparator
+ *   // With custom comparator passed to operations
  *   int cmp(int a, int b) { return (a > b) - (a < b); }
- *   RBT(int) tree2 = rbt(int, cmp);
- *   rbt_insert(&tree2, 5);
+ *   RBT(int) tree2 = rbt(int);
+ *   rbt_insert(&tree2, 5, cmp);
+ *   rbt_insert(&tree2, 3, cmp);
+ *   bool found = rbt_contains(&tree2, 3, cmp);
+ *   rbt_remove(&tree2, 5, cmp);
  *
  * Note: RBT requires template expansion via #define T / #undef T for type instantiation.
  */
@@ -760,6 +763,7 @@ struct RBT_NODE(T) {
 typedef struct {
     struct RBT_NODE(T) * root;
     const size_t node_size;
+    const size_t size;
 } RBT(T);
 
 #endif // T
