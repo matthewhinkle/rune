@@ -2,6 +2,7 @@
 
 A C23 library experimenting with foundational primitives found in higher-level languages.
 
+[![Build Status](https://github.com/matthewhinkle/rune/actions/workflows/coverage.yml/badge.svg)](https://github.com/matthewhinkle/rune/actions/workflows/coverage.yml)
 [![codecov](https://codecov.io/gh/matthewhinkle/rune/branch/master/graph/badge.svg)](https://codecov.io/gh/matthewhinkle/rune)
 
 ## Features
