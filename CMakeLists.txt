@@ -25,12 +25,12 @@ option(ENABLE_VULKAN "Enable Vulkan support" OFF)
 # Find SDL3 package (optional)
 if (ENABLE_SDL3)
     find_package(SDL3 CONFIG REQUIRED)
-endif()
+endif ()
 
 # Find Vulkan (optional)
 if (ENABLE_VULKAN)
     find_package(Vulkan REQUIRED)
-endif()
+endif ()
 
 # Find CUnit - portable across platforms
 find_path(CUNIT_INCLUDE_DIR NAMES CUnit/CUnit.h)
@@ -69,16 +69,17 @@ set(RUNE_SRC
 # Add the executable
 add_executable(rune src/main.c ${RUNE_SRC}
         src/hash.h
-        src/hash.c)
+        src/hash.c
+)
 
 # Link optional libraries
 if (ENABLE_SDL3)
     target_link_libraries(rune PRIVATE SDL3::SDL3)
-endif()
+endif ()
 
 if (ENABLE_VULKAN)
     target_link_libraries(rune PRIVATE Vulkan::Vulkan)
-endif()
+endif ()
 
 # ================================================================================================
 # tool targets

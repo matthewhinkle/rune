@@ -505,23 +505,16 @@ enum rbt_color { R_(rbt_red), R_(rbt_black), R_(rbt_double_black) };
 
 enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
 
-// Helper: count variadic arguments
-#define R_RBT_NARGS(...) R_RBT_NARGS_IMPL(__VA_ARGS__, 2, 1)
-#define R_RBT_NARGS_IMPL(_1, _2, N, ...) N
-
-// Dispatcher based on argument count
-#define R_RBT_DISPATCH(N, type, ...) R_GLUE(R_RBT_DISPATCH_, N)(type, __VA_ARGS__)
-#define R_RBT_DISPATCH_1(type, ...) R_RBT_NEW(type)(nullptr)
-#define R_RBT_DISPATCH_2(type, cmp_fn) R_RBT_NEW(type)((cmp_fn))
-
 #define RBT(type) R_GLUE(rbt_, type)
 #define RBT_NODE(type) R_GLUE(rbt_node_, type)
-#define R_RBT_NEW(type) R_GLUE(RBT(type), _new)
 #define R_RBT_FREE(type) R_GLUE(RBT(type), _free)
 #define R_RBT_NODE_NEW(type) R_GLUE(RBT_NODE(type), _new)
 #define R_RBT_NODE_FREE(type) R_GLUE(RBT_NODE(type), _free)
 
-#define rbt(type, ...) R_RBT_DISPATCH(R_RBT_NARGS(__VA_ARGS__), type, __VA_ARGS__)
+#define rbt(type, ...)                                                                                                 \
+    {.root = nullptr,                                                                                                  \
+     .node_fn = R_RBT_NODE_NEW(type),                                                                                  \
+     .node_free_fn = R_RBT_NODE_FREE(type) __VA_OPT__(, .cmp_fn = __VA_ARGS__)}
 
 #define R_RBT_PARENT(t, val, out_dir)                                                                                  \
     ({                                                                                                                 \
@@ -1101,14 +1094,18 @@ static void R_RBT_NODE_FREE(T)(struct RBT_NODE(T) * node) {
     }
 }
 
-static RBT(T) R_RBT_NEW(T)(int (*cmp_fn)(T a, T b)) {
-    const RBT(T) rbt = {
-        .root = nullptr,
-        .cmp_fn = cmp_fn,
-        .node_fn = R_RBT_NODE_NEW(T),
-        .node_free_fn = R_RBT_NODE_FREE(T),
-    };
-    return rbt;
-}
-
 #endif // T
+
+// =====================================================================================================================
+// Hash Map
+// =====================================================================================================================
+
+// API
+// ---------------------------------------------------------------------------------------------------------------------
+
+#ifndef RUNE_MAP_API
+#define RUNE_MAP_API
+
+#define MAP(key_t, val_t) R_GLUE(map_, key_t, val_t)
+
+#endif // RUNE_MAP_API
