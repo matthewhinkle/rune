@@ -101,7 +101,7 @@ typedef struct {
     const size_t max_tok;
 } str_opt;
 
-static const str_opt r_str_opts_default = {
+static const str_opt R_STR_OPTS_DEFAULT = {
     .max_len = R_STR_MAX_LEN,
 };
 

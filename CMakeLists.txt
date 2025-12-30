@@ -71,7 +71,6 @@ add_executable(rune src/main.c ${RUNE_SRC}
         src/hash.h
         src/hash.c
         src/tree.h
-        src/map.c
         src/map.h
 )
 
