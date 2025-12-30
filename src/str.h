@@ -119,9 +119,9 @@ extern char * R_(str)(const char * restrict data, const str_opt * opt);
 #define strf(first, ...)                                                                                               \
     _Generic(                                                                                                          \
         (first),                                                                                                       \
-        const str_opt *: R_(strf)((first)R_VA_ARGS(__VA_ARGS__)),                                                      \
-        str_opt *: R_(strf)((first)R_VA_ARGS(__VA_ARGS__)),                                                            \
-        default: R_(strf)(&R_STR_OPTS_DEFAULT, (first)R_VA_ARGS(__VA_ARGS__))                                          \
+        const str_opt *: R_(strf)((const str_opt *)(void *)(first)R_VA_ARGS(__VA_ARGS__)),                            \
+        str_opt *: R_(strf)((const str_opt *)(void *)(first)R_VA_ARGS(__VA_ARGS__)),                                  \
+        default: R_(strf)(&R_STR_OPTS_DEFAULT, (const char *)(void *)(first)R_VA_ARGS(__VA_ARGS__))                   \
     )
 [[nodiscard]]
 extern char * R_(strf)(const str_opt * opt, const char * fmt, ...);
@@ -152,10 +152,10 @@ extern uint64_t R_(str_hash)(const char * s, const str_opt * opt);
 // Comparison
 // =====================================================================================================================
 
-#define str_cmp(data, ...) R_(str_cmp)((data), R_OPT(&R_STR_OPTS_DEFAULT, __VA_ARGS__))
+#define str_cmp(a, b, ...) R_(str_cmp)((a), (b), R_OPT(&R_STR_OPTS_DEFAULT, __VA_ARGS__))
 extern int R_(str_cmp)(const char * a, const char * b, const str_opt * opt);
 
-#define str_eq(data, ...) R_(str_eq)((data), R_OPT(&R_STR_OPTS_DEFAULT, __VA_ARGS__))
+#define str_eq(a, b, ...) R_(str_eq)((a), (b), R_OPT(&R_STR_OPTS_DEFAULT, __VA_ARGS__))
 extern bool R_(str_eq)(const char * a, const char * b, const str_opt * opt);
 
 // =====================================================================================================================
@@ -175,9 +175,9 @@ extern const char * R_(str_rfind)(const char * data, const char * target, const 
 #define str_cat(first, ...)                                                                                            \
     _Generic(                                                                                                          \
         (first),                                                                                                       \
-        const str_opt *: R_(str_cat)((first)R_VA_ARGS(__VA_ARGS__)),                                                   \
-        str_opt *: R_(str_cat)((first)R_VA_ARGS(__VA_ARGS__)),                                                         \
-        default: R_(str_cat)(&R_STR_OPTS_DEFAULT, (first)R_VA_ARGS(__VA_ARGS__))                                       \
+        const str_opt *: R_(str_cat)((const str_opt *)(void *)(first)R_VA_ARGS(__VA_ARGS__)),                         \
+        str_opt *: R_(str_cat)((const str_opt *)(void *)(first)R_VA_ARGS(__VA_ARGS__)),                               \
+        default: R_(str_cat)(&R_STR_OPTS_DEFAULT, (const char *)(void *)(first)R_VA_ARGS(__VA_ARGS__))                \
     )
 [[nodiscard]]
 extern char * R_(str_cat)(const str_opt * opt, const char * first, ...);

@@ -64,8 +64,8 @@ static rstr * rstr_from(const char * data) {
 
     rstr * r = (rstr *)(data - offsetof(rstr, data));
     if (r->soh == SOH && r->stx == STX) {
-        // Check ETX marker at end
-        if (r->data[r->cap] == ETX) {
+        // Check ETX marker at end (positioned after null terminator)
+        if (r->data[r->cap + 1] == ETX) {
             return r;
         }
     }
@@ -203,12 +203,13 @@ extern char * R_(strf)(const str_opt * opt, const char * fmt, ...) {
         const int n = vsnprintf(tmp, max_len + 1, fmt, args);
         va_end(args);
 
-        if (n < 0 || (size_t)n > max_len) {
+        if (n < 0) {
             err_set(R_ERR_FORMAT_FAILED, nullptr);
             return nullptr;
         }
 
-        rstr * r = rstr_new(tmp, (size_t)n);
+        // If n > max_len, vsnprintf truncated the string - use the truncated version
+        rstr * r = rstr_new(tmp, max_len);
         if (r == nullptr) {
             err_set(R_ERR_ALLOC_FAILED, nullptr);
             return nullptr;
@@ -222,8 +223,9 @@ extern char * R_(strf)(const str_opt * opt, const char * fmt, ...) {
     va_end(args);
 
     char * result = nullptr;
-    if (n >= 0 && (size_t)n <= max_len) {
-        rstr * r = rstr_new(tmp, (size_t)n);
+    if (n >= 0) {
+        // If n > max_len, vsnprintf truncated the string - use the truncated version
+        rstr * r = rstr_new(tmp, max_len);
         if (r != nullptr) {
             result = r->data;
         } else {
@@ -324,14 +326,19 @@ extern const char * R_(str_find)(const char * data, const char * target, const s
     // Use stack buffer for small patterns (<=R_STR_STACK_MAX), heap for large patterns.
     // This avoids VLA overhead for common cases while protecting stack on systems with
     // limited stack space. Pattern length is naturally bounded by max_len (typically 4KB).
+    const char * result;
     if (n_len <= R_STR_STACK_MAX) {
         int lps[n_len];
-        return kmp_find(data, h_len, target, n_len, false, lps);
+        result = kmp_find(data, h_len, target, n_len, false, lps);
+    } else {
+        int * lps = mem_alloc(n_len * sizeof(int));
+        result = kmp_find(data, h_len, target, n_len, false, lps);
+        mem_free(lps, n_len * sizeof(int));
     }
 
-    int * lps = mem_alloc(n_len * sizeof(int));
-    const char * result = kmp_find(data, h_len, target, n_len, false, lps);
-    mem_free(lps, n_len * sizeof(int));
+    if (result == nullptr) {
+        err_set(R_ERR_PATTERN_NOT_FOUND, nullptr);
+    }
     return result;
 }
 
@@ -354,14 +361,19 @@ extern const char * R_(str_rfind)(const char * data, const char * target, const 
     // Use stack buffer for small patterns (<=R_STR_STACK_MAX), heap for large patterns.
     // This avoids VLA overhead for common cases while protecting stack on systems with
     // limited stack space. Pattern length is naturally bounded by max_len (typically 4KB).
+    const char * result;
     if (n_len <= R_STR_STACK_MAX) {
         int lps[n_len];
-        return kmp_find(data, h_len, target, n_len, true, lps);
+        result = kmp_find(data, h_len, target, n_len, true, lps);
+    } else {
+        int * lps = mem_alloc(n_len * sizeof(int));
+        result = kmp_find(data, h_len, target, n_len, true, lps);
+        mem_free(lps, n_len * sizeof(int));
     }
 
-    int * lps = mem_alloc(n_len * sizeof(int));
-    const char * result = kmp_find(data, h_len, target, n_len, true, lps);
-    mem_free(lps, n_len * sizeof(int));
+    if (result == nullptr) {
+        err_set(R_ERR_PATTERN_NOT_FOUND, nullptr);
+    }
     return result;
 }
 

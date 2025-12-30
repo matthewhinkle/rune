@@ -91,7 +91,14 @@
 
 // ---------------------------------------------- Function wrapper macros ----------------------------------------------
 
-#define R_OPT(def, ...) __VA_OPT__(__VA_ARGS__, ) def
+// Helper to pick the first argument (for optional parameter handling)
+#define R_OPT_PICK(val, ...) val
+
+// Optional parameter macro: returns custom option if provided, otherwise returns default
+// Usage: R_OPT(&default_opt, /* optional: &custom_opt */)
+// - No variadic args: returns def
+// - With variadic args: returns first variadic arg
+#define R_OPT(def, ...) R_OPT_PICK(__VA_ARGS__ __VA_OPT__(,) def)
 
 // -------------------------------------------- Scope and allocator macros ---------------------------------------------
 // These macros implement RAII-style resource management using push/pop semantics.
