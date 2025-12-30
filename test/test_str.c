@@ -12,7 +12,7 @@
 // =====================================================================================================================
 
 static void test_str_default() {
-    char * s = str("Hello");
+    const char * s = str("Hello");
     CU_ASSERT_PTR_NOT_NULL(s);
     CU_ASSERT_FALSE(err_has());
     CU_ASSERT_TRUE(str_is(s));
@@ -24,7 +24,7 @@ static void test_str_default() {
 static void test_str_with_max_len() {
     const str_opt custom_opt = {.max_len = 10};
 
-    char * s1 = str("Hello", &custom_opt);
+    const char * s1 = str("Hello", &custom_opt);
     CU_ASSERT_PTR_NOT_NULL(s1);
     CU_ASSERT_FALSE(err_has());
     CU_ASSERT_TRUE(str_is(s1));
@@ -32,17 +32,17 @@ static void test_str_with_max_len() {
     CU_ASSERT_STRING_EQUAL(s1, "Hello");
     str_free(s1);
 
-    char * s2 = str("Hello World!", &custom_opt);
+    const char * s2 = str("Hello World!", &custom_opt);
     CU_ASSERT_PTR_NOT_NULL(s2);
     CU_ASSERT_FALSE(err_has());
     CU_ASSERT_TRUE(str_is(s2));
     CU_ASSERT_EQUAL(str_len(s2), 10);
-    CU_ASSERT_EQUAL(strncmp(s2, "Hello Worl", 10), 0);
+    CU_ASSERT_EQUAL(strncmp(s2, "Hello W/Users/matt/CLionProjects/rune/test/test_str.corl", 10), 0);
     str_free(s2);
 }
 
 static void test_str_empty() {
-    char * s = str("");
+    const char * s = str("");
     CU_ASSERT_PTR_NOT_NULL(s);
     CU_ASSERT_FALSE(err_has());
     CU_ASSERT_TRUE(str_is(s));
@@ -52,7 +52,7 @@ static void test_str_empty() {
 }
 
 static void test_str_null_input() {
-    char * s = str(nullptr);
+    const char * s = str(nullptr);
     CU_ASSERT_PTR_NULL(s);
     CU_ASSERT_TRUE(err_has());
     err_clear();
@@ -63,7 +63,7 @@ static void test_str_null_input() {
 // =====================================================================================================================
 
 static void test_strf_basic() {
-    char * s = strf("Hello, %s!", "World");
+    const char * s = strf("Hello, %s!", "World");
     CU_ASSERT_PTR_NOT_NULL(s);
     CU_ASSERT_FALSE(err_has());
     CU_ASSERT_TRUE(str_is(s));
@@ -72,7 +72,7 @@ static void test_strf_basic() {
 }
 
 static void test_strf_multiple_args() {
-    char * s = strf("%s %d %s", "test", 42, "end");
+    const char * s = strf("%s %d %s", "test", 42, "end");
     CU_ASSERT_PTR_NOT_NULL(s);
     CU_ASSERT_FALSE(err_has());
     CU_ASSERT_STRING_EQUAL(s, "test 42 end");
@@ -81,7 +81,7 @@ static void test_strf_multiple_args() {
 
 static void test_strf_with_options() {
     const str_opt custom_opt = {.max_len = 10};
-    char * s = strf(&custom_opt, "Hello, %s!", "World");
+    const char * s = strf(&custom_opt, "Hello, %s!", "World");
     CU_ASSERT_PTR_NOT_NULL(s);
     CU_ASSERT_FALSE(err_has());
     CU_ASSERT_EQUAL(str_len(s), 10);
@@ -90,7 +90,7 @@ static void test_strf_with_options() {
 }
 
 static void test_strf_null_format() {
-    char * s = R_(strf)(&R_STR_OPTS_DEFAULT, nullptr);
+    const char * s = R_(strf)(&R_STR_OPTS_DEFAULT, nullptr);
     CU_ASSERT_PTR_NULL(s);
     CU_ASSERT_TRUE(err_has());
     err_clear();
@@ -101,7 +101,7 @@ static void test_strf_null_format() {
 // =====================================================================================================================
 
 static void test_str_free_valid() {
-    char * s = str("test");
+    const char * s = str("test");
     CU_ASSERT_PTR_NOT_NULL(s);
     str_free(s);
 }
@@ -134,7 +134,7 @@ static void test_str_free_arr_null() {
 // =====================================================================================================================
 
 static void test_str_is_managed() {
-    char * s = str("test");
+    const char * s = str("test");
     CU_ASSERT_TRUE(str_is(s));
     str_free(s);
 }
@@ -153,7 +153,7 @@ static void test_str_is_null() {
 // =====================================================================================================================
 
 static void test_str_len_managed() {
-    char * s = str("Hello");
+    const char * s = str("Hello");
     CU_ASSERT_EQUAL(str_len(s), 5);
     str_free(s);
 }
@@ -164,7 +164,7 @@ static void test_str_len_regular() {
 }
 
 static void test_str_len_empty() {
-    char * s = str("");
+    const char * s = str("");
     CU_ASSERT_EQUAL(str_len(s), 0);
     str_free(s);
 }
@@ -184,8 +184,8 @@ static void test_str_len_with_max() {
 // =====================================================================================================================
 
 static void test_str_size_managed() {
-    char * s = str("Hello");
-    size_t size = str_size(s);
+    const char * s = str("Hello");
+    const size_t size = str_size(s);
     CU_ASSERT_TRUE(size > 0);
     CU_ASSERT_TRUE(size >= 5);
     str_free(s);
@@ -205,23 +205,23 @@ static void test_str_size_null() {
 // =====================================================================================================================
 
 static void test_str_hash_basic() {
-    char * s = str("test");
-    uint64_t hash = str_hash(s);
+    const char * s = str("test");
+    const uint64_t hash = str_hash(s);
     CU_ASSERT_NOT_EQUAL(hash, 0);
     str_free(s);
 }
 
 static void test_str_hash_equal_strings() {
-    char * s1 = str("test");
-    char * s2 = str("test");
+    const char * s1 = str("test");
+    const char * s2 = str("test");
     CU_ASSERT_EQUAL(str_hash(s1), str_hash(s2));
     str_free(s1);
     str_free(s2);
 }
 
 static void test_str_hash_different_strings() {
-    char * s1 = str("test1");
-    char * s2 = str("test2");
+    const char * s1 = str("test1");
+    const char * s2 = str("test2");
     CU_ASSERT_NOT_EQUAL(str_hash(s1), str_hash(s2));
     str_free(s1);
     str_free(s2);
@@ -236,31 +236,31 @@ static void test_str_hash_null() {
 // =====================================================================================================================
 
 static void test_str_cmp_equal() {
-    char * s1 = str("test");
-    char * s2 = str("test");
+    const char * s1 = str("test");
+    const char * s2 = str("test");
     CU_ASSERT_EQUAL(str_cmp(s1, s2), 0);
     str_free(s1);
     str_free(s2);
 }
 
 static void test_str_cmp_less() {
-    char * s1 = str("abc");
-    char * s2 = str("xyz");
+    const char * s1 = str("abc");
+    const char * s2 = str("xyz");
     CU_ASSERT_TRUE(str_cmp(s1, s2) < 0);
     str_free(s1);
     str_free(s2);
 }
 
 static void test_str_cmp_greater() {
-    char * s1 = str("xyz");
-    char * s2 = str("abc");
+    const char * s1 = str("xyz");
+    const char * s2 = str("abc");
     CU_ASSERT_TRUE(str_cmp(s1, s2) > 0);
     str_free(s1);
     str_free(s2);
 }
 
 static void test_str_cmp_null() {
-    char * s = str("test");
+    const char * s = str("test");
     CU_ASSERT_TRUE(str_cmp(nullptr, s) < 0);
     CU_ASSERT_TRUE(str_cmp(s, nullptr) > 0);
     CU_ASSERT_EQUAL(str_cmp(nullptr, nullptr), 0);
@@ -272,23 +272,23 @@ static void test_str_cmp_null() {
 // =====================================================================================================================
 
 static void test_str_eq_equal() {
-    char * s1 = str("test");
-    char * s2 = str("test");
+    const char * s1 = str("test");
+    const char * s2 = str("test");
     CU_ASSERT_TRUE(str_eq(s1, s2));
     str_free(s1);
     str_free(s2);
 }
 
 static void test_str_eq_different() {
-    char * s1 = str("test1");
-    char * s2 = str("test2");
+    const char * s1 = str("test1");
+    const char * s2 = str("test2");
     CU_ASSERT_FALSE(str_eq(s1, s2));
     str_free(s1);
     str_free(s2);
 }
 
 static void test_str_eq_null() {
-    char * s = str("test");
+    const char * s = str("test");
     CU_ASSERT_FALSE(str_eq(nullptr, s));
     CU_ASSERT_FALSE(str_eq(s, nullptr));
     CU_ASSERT_TRUE(str_eq(nullptr, nullptr));
@@ -300,7 +300,7 @@ static void test_str_eq_null() {
 // =====================================================================================================================
 
 static void test_str_find_basic() {
-    char * s = str("Hello World");
+    const char * s = str("Hello World");
     const char * result = str_find(s, "World");
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_FALSE(err_has());
@@ -309,7 +309,7 @@ static void test_str_find_basic() {
 }
 
 static void test_str_find_not_found() {
-    char * s = str("Hello World");
+    const char * s = str("Hello World");
     const char * result = str_find(s, "xyz");
     CU_ASSERT_PTR_NULL(result);
     CU_ASSERT_TRUE(err_has());
@@ -318,7 +318,7 @@ static void test_str_find_not_found() {
 }
 
 static void test_str_find_empty_pattern() {
-    char * s = str("Hello");
+    const char * s = str("Hello");
     const char * result = str_find(s, "");
     CU_ASSERT_PTR_EQUAL(result, s);
     CU_ASSERT_FALSE(err_has());
@@ -326,7 +326,7 @@ static void test_str_find_empty_pattern() {
 }
 
 static void test_str_find_at_start() {
-    char * s = str("Hello World");
+    const char * s = str("Hello World");
     const char * result = str_find(s, "Hello");
     CU_ASSERT_PTR_EQUAL(result, s);
     str_free(s);
@@ -344,7 +344,7 @@ static void test_str_find_null() {
 // =====================================================================================================================
 
 static void test_str_rfind_basic() {
-    char * s = str("Hello World World");
+    const char * s = str("Hello World World");
     const char * result = str_rfind(s, "World");
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_FALSE(err_has());
@@ -354,7 +354,7 @@ static void test_str_rfind_basic() {
 }
 
 static void test_str_rfind_not_found() {
-    char * s = str("Hello World");
+    const char * s = str("Hello World");
     const char * result = str_rfind(s, "xyz");
     CU_ASSERT_PTR_NULL(result);
     CU_ASSERT_TRUE(err_has());
@@ -363,7 +363,7 @@ static void test_str_rfind_not_found() {
 }
 
 static void test_str_rfind_empty_pattern() {
-    char * s = str("Hello");
+    const char * s = str("Hello");
     const char * result = str_rfind(s, "");
     CU_ASSERT_PTR_EQUAL(result, s + 5);
     CU_ASSERT_FALSE(err_has());
@@ -377,7 +377,7 @@ static void test_str_rfind_empty_pattern() {
 static void test_str_cat_basic() {
     char * s1 = str("Hello");
     char * s2 = str("World");
-    char * result = str_cat(s1, " ", s2, nullptr);
+    const char * result = str_cat(s1, " ", s2, nullptr);
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_FALSE(err_has());
     CU_ASSERT_STRING_EQUAL(result, "Hello World");
@@ -387,7 +387,7 @@ static void test_str_cat_basic() {
 }
 
 static void test_str_cat_multiple() {
-    char * result = str_cat("a", "b", "c", "d", nullptr);
+    const char * result = str_cat("a", "b", "c", "d", nullptr);
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_STRING_EQUAL(result, "abcd");
     str_free(result);
@@ -395,14 +395,14 @@ static void test_str_cat_multiple() {
 
 static void test_str_cat_with_options() {
     const str_opt opt = {.max_len = 5};
-    char * result = str_cat(&opt, "Hello", " ", "World", nullptr);
+    const char * result = str_cat(&opt, "Hello", " ", "World", nullptr);
     CU_ASSERT_PTR_NULL(result);
     CU_ASSERT_TRUE(err_has());
     err_clear();
 }
 
 static void test_str_cat_null_first() {
-    char * result = str_cat(nullptr, "test", nullptr);
+    const char * result = str_cat(nullptr, "test", nullptr);
     CU_ASSERT_PTR_NULL(result);
     CU_ASSERT_TRUE(err_has());
     err_clear();
@@ -414,7 +414,7 @@ static void test_str_cat_null_first() {
 
 static void test_str_join_basic() {
     const char * arr[] = {"one", "two", "three", nullptr};
-    char * result = str_join(", ", arr);
+    const char * result = str_join(", ", arr);
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_FALSE(err_has());
     CU_ASSERT_STRING_EQUAL(result, "one, two, three");
@@ -423,7 +423,7 @@ static void test_str_join_basic() {
 
 static void test_str_join_empty_delim() {
     const char * arr[] = {"a", "b", "c", nullptr};
-    char * result = str_join("", arr);
+    const char * result = str_join("", arr);
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_STRING_EQUAL(result, "abc");
     str_free(result);
@@ -431,7 +431,7 @@ static void test_str_join_empty_delim() {
 
 static void test_str_join_single_element() {
     const char * arr[] = {"only", nullptr};
-    char * result = str_join(", ", arr);
+    const char * result = str_join(", ", arr);
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_STRING_EQUAL(result, "only");
     str_free(result);
@@ -439,7 +439,7 @@ static void test_str_join_single_element() {
 
 static void test_str_join_null_delim() {
     const char * arr[] = {"one", "two", nullptr};
-    char * result = str_join(nullptr, arr);
+    const char * result = str_join(nullptr, arr);
     CU_ASSERT_PTR_NULL(result);
     CU_ASSERT_TRUE(err_has());
     err_clear();
@@ -450,8 +450,8 @@ static void test_str_join_null_delim() {
 // =====================================================================================================================
 
 static void test_str_repeat_basic() {
-    char * s = str("ab");
-    char * result = str_repeat(s, 3);
+    const char * s = str("ab");
+    const char * result = str_repeat(s, 3);
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_FALSE(err_has());
     CU_ASSERT_STRING_EQUAL(result, "ababab");
@@ -460,8 +460,8 @@ static void test_str_repeat_basic() {
 }
 
 static void test_str_repeat_once() {
-    char * s = str("test");
-    char * result = str_repeat(s, 1);
+    const char * s = str("test");
+    const char * result = str_repeat(s, 1);
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_STRING_EQUAL(result, "test");
     str_free(s);
@@ -469,8 +469,8 @@ static void test_str_repeat_once() {
 }
 
 static void test_str_repeat_zero() {
-    char * s = str("test");
-    char * result = str_repeat(s, 0);
+    const char * s = str("test");
+    const char * result = str_repeat(s, 0);
     CU_ASSERT_PTR_NULL(result);
     CU_ASSERT_TRUE(err_has());
     err_clear();
@@ -478,7 +478,7 @@ static void test_str_repeat_zero() {
 }
 
 static void test_str_repeat_null() {
-    char * result = str_repeat(nullptr, 3);
+    const char * result = str_repeat(nullptr, 3);
     CU_ASSERT_PTR_NULL(result);
     CU_ASSERT_TRUE(err_has());
     err_clear();
@@ -489,8 +489,8 @@ static void test_str_repeat_null() {
 // =====================================================================================================================
 
 static void test_str_replace_basic() {
-    char * s = str("Hello World");
-    char * result = str_replace(s, "World", "Universe");
+    const char * s = str("Hello World");
+    const char * result = str_replace(s, "World", "Universe");
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_FALSE(err_has());
     CU_ASSERT_STRING_EQUAL(result, "Hello Universe");
@@ -499,8 +499,8 @@ static void test_str_replace_basic() {
 }
 
 static void test_str_replace_multiple() {
-    char * s = str("foo bar foo");
-    char * result = str_replace(s, "foo", "baz");
+    const char * s = str("foo bar foo");
+    const char * result = str_replace(s, "foo", "baz");
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_STRING_EQUAL(result, "baz bar baz");
     str_free(s);
@@ -508,8 +508,8 @@ static void test_str_replace_multiple() {
 }
 
 static void test_str_replace_not_found() {
-    char * s = str("Hello World");
-    char * result = str_replace(s, "xyz", "abc");
+    const char * s = str("Hello World");
+    const char * result = str_replace(s, "xyz", "abc");
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_STRING_EQUAL(result, "Hello World");
     str_free(s);
@@ -517,8 +517,8 @@ static void test_str_replace_not_found() {
 }
 
 static void test_str_replace_empty_target() {
-    char * s = str("test");
-    char * result = str_replace(s, "", "x");
+    const char * s = str("test");
+    const char * result = str_replace(s, "", "x");
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_STRING_EQUAL(result, "test");
     str_free(s);
@@ -526,7 +526,7 @@ static void test_str_replace_empty_target() {
 }
 
 static void test_str_replace_null() {
-    char * result = str_replace(nullptr, "a", "b");
+    const char * result = str_replace(nullptr, "a", "b");
     CU_ASSERT_PTR_NULL(result);
     CU_ASSERT_TRUE(err_has());
     err_clear();
@@ -537,7 +537,7 @@ static void test_str_replace_null() {
 // =====================================================================================================================
 
 static void test_str_split_basic() {
-    char * s = str("one,two,three");
+    const char * s = str("one,two,three");
     char ** result = str_split(s, ",");
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_FALSE(err_has());
@@ -553,7 +553,7 @@ static void test_str_split_basic() {
 }
 
 static void test_str_split_single() {
-    char * s = str("single");
+    const char * s = str("single");
     char ** result = str_split(s, ",");
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_PTR_NOT_NULL(result[0]);
@@ -564,7 +564,7 @@ static void test_str_split_single() {
 }
 
 static void test_str_split_multi_char_delim() {
-    char * s = str("one::two::three");
+    const char * s = str("one::two::three");
     char ** result = str_split(s, "::");
     CU_ASSERT_PTR_NOT_NULL(result);
     CU_ASSERT_STRING_EQUAL(result[0], "one");
@@ -591,6 +591,7 @@ int main() {
     }
 
     // str() suite
+    // ReSharper disable CppLocalVariableMayBeConst
     CU_pSuite suite_str = CU_add_suite("str()", nullptr, nullptr);
     if (suite_str == nullptr) {
         CU_cleanup_registry();
@@ -755,7 +756,7 @@ int main() {
     ADD_TEST(suite_str_replace, test_str_replace_null);
 
     // str_split() suite
-    CU_pSuite suite_str_split = CU_add_suite("str_split()", nullptr, nullptr);
+    CU_pSuite suite_str_split = CU_add_suite("str_split()", nullptr, nullptr); // NOLINT(*-misplaced-const)
     if (suite_str_split == nullptr) {
         CU_cleanup_registry();
         return CU_get_error();
@@ -769,6 +770,7 @@ int main() {
     CU_basic_run_tests();
     CU_cleanup_registry();
     return CU_get_error();
+    // ReSharper restore CppLocalVariableMayBeConst
 }
 
 #ifdef RUN_TESTS

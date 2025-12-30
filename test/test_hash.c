@@ -1,5 +1,5 @@
 /*
- * Hash module tests - MurmurHash variants testing.
+ * Hash tests.
  */
 
 #include "../src/hash.h"
@@ -8,7 +8,6 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <string.h>
 
 // Test constants
 static const char * HELLO = "hello";
@@ -1046,13 +1045,13 @@ static void xxhash64__for_various_tail_sizes__should_produce__unique_hashes() {
     const char * data = "0123456789abcdef";
 
     // Act - test various sizes: small, 4-byte block, 8-byte block, and 32-byte threshold
-    const uint64_t h1 = xxhash64(data, 1, 0);    // 1 byte
-    const uint64_t h2 = xxhash64(data, 2, 0);    // 2 bytes
-    const uint64_t h4 = xxhash64(data, 4, 0);    // 4 bytes (4-byte block tail)
-    const uint64_t h7 = xxhash64(data, 7, 0);    // 7 bytes
-    const uint64_t h8 = xxhash64(data, 8, 0);    // 8 bytes (full 8-byte block)
-    const uint64_t h15 = xxhash64(data, 15, 0);  // 15 bytes
-    const uint64_t h16 = xxhash64(data, 16, 0);  // 16 bytes (2 blocks)
+    const uint64_t h1 = xxhash64(data, 1, 0);   // 1 byte
+    const uint64_t h2 = xxhash64(data, 2, 0);   // 2 bytes
+    const uint64_t h4 = xxhash64(data, 4, 0);   // 4 bytes (4-byte block tail)
+    const uint64_t h7 = xxhash64(data, 7, 0);   // 7 bytes
+    const uint64_t h8 = xxhash64(data, 8, 0);   // 8 bytes (full 8-byte block)
+    const uint64_t h15 = xxhash64(data, 15, 0); // 15 bytes
+    const uint64_t h16 = xxhash64(data, 16, 0); // 16 bytes (2 blocks)
 
     // Assert - all should be different
     CU_ASSERT_NOT_EQUAL(h1, h2);
@@ -1071,12 +1070,12 @@ static void xxhash64__for_32_byte_threshold__should_use_parallel_processing() {
     // Act - hash below threshold (simple path), at threshold, and above
     const uint64_t h16 = xxhash64(data, 16, 0);
     const uint64_t h31 = xxhash64(data, 31, 0);
-    const uint64_t h32 = xxhash64(data, 32, 0);  // Triggers parallel v1-v4 processing
+    const uint64_t h32 = xxhash64(data, 32, 0); // Triggers parallel v1-v4 processing
     const uint64_t h33 = xxhash64(data, 33, 0);
     const uint64_t h64 = xxhash64(data, 64, 0);
 
     // Assert - hashes should differ (different code paths)
-    CU_ASSERT_NOT_EQUAL(h31, h32);  // Cross the 32-byte threshold
+    CU_ASSERT_NOT_EQUAL(h31, h32); // Cross the 32-byte threshold
     CU_ASSERT_NOT_EQUAL(h32, h33);
     CU_ASSERT_NOT_EQUAL(h33, h64);
 }
@@ -1224,7 +1223,7 @@ static void xxhash64_and_murmur64__should_be_deterministic_independently() {
 }
 
 // =====================================================================================================================
-// main
+// Test suite registration
 // =====================================================================================================================
 
 int main() {
@@ -1232,155 +1231,165 @@ int main() {
         return CU_get_error();
     }
 
-    // ReSharper disable once CppLocalVariableMayBeConst
-    CU_pSuite suite = CU_add_suite("hash_tests", nullptr, nullptr);
-    if (suite == nullptr) {
+    // murmur32() suite
+    CU_pSuite suite_murmur32 = CU_add_suite("murmur32()", nullptr, nullptr);
+    if (suite_murmur32 == nullptr) {
         CU_cleanup_registry();
         return CU_get_error();
     }
+    ADD_TEST(suite_murmur32, murmur32__for_empty_data__should_return__nonzero_hash);
+    ADD_TEST(suite_murmur32, murmur32__for_empty_data_with_different_seeds__should_return__different_hashes);
+    ADD_TEST(suite_murmur32, murmur32__for_same_input__should_return__same_hash);
+    ADD_TEST(suite_murmur32, murmur32__for_different_inputs__should_return__different_hashes);
+    ADD_TEST(suite_murmur32, murmur32__for_different_seeds__should_return__different_hashes);
+    ADD_TEST(suite_murmur32, murmur32__for_1_byte__should_return__valid_hash);
+    ADD_TEST(suite_murmur32, murmur32__for_2_bytes__should_return__valid_hash);
+    ADD_TEST(suite_murmur32, murmur32__for_3_bytes__should_return__valid_hash);
+    ADD_TEST(suite_murmur32, murmur32__for_4_bytes__should_return__valid_hash);
+    ADD_TEST(suite_murmur32, murmur32__for_5_bytes__should_return__valid_hash);
+    ADD_TEST(suite_murmur32, murmur32__for_various_tail_sizes__should_produce__unique_hashes);
+    ADD_TEST(suite_murmur32, murmur32__for_large_input__should_return__valid_hash);
+    ADD_TEST(suite_murmur32, murmur32__for_data_with_null_bytes__should_hash_all_bytes);
+    ADD_TEST(suite_murmur32, murmur32__for_single_bit_change__should_produce__different_hash);
+    ADD_TEST(suite_murmur32, murmur32__for_sequential_keys__should_produce__varied_hashes);
 
-    // murmur32 tests - empty input
-    ADD_TEST(suite, murmur32__for_empty_data__should_return__nonzero_hash);
-    ADD_TEST(suite, murmur32__for_empty_data_with_different_seeds__should_return__different_hashes);
+    // murmur64() suite
+    CU_pSuite suite_murmur64 = CU_add_suite("murmur64()", nullptr, nullptr);
+    if (suite_murmur64 == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_murmur64, murmur64__for_empty_data__should_return__deterministic_hash);
+    ADD_TEST(suite_murmur64, murmur64__for_empty_data_with_different_seeds__should_return__different_hashes);
+    ADD_TEST(suite_murmur64, murmur64__for_same_input__should_return__same_hash);
+    ADD_TEST(suite_murmur64, murmur64__for_different_inputs__should_return__different_hashes);
+    ADD_TEST(suite_murmur64, murmur64__for_different_seeds__should_return__different_hashes);
+    ADD_TEST(suite_murmur64, murmur64__for_various_tail_sizes__should_produce__unique_hashes);
+    ADD_TEST(suite_murmur64, murmur64__for_large_input__should_return__valid_hash);
+    ADD_TEST(suite_murmur64, murmur64__for_data_with_null_bytes__should_hash_all_bytes);
+    ADD_TEST(suite_murmur64, murmur64__for_single_bit_change__should_produce__different_hash);
+    ADD_TEST(suite_murmur64, murmur64__for_sequential_keys__should_produce__varied_hashes);
 
-    // murmur32 tests - basic functionality
-    ADD_TEST(suite, murmur32__for_same_input__should_return__same_hash);
-    ADD_TEST(suite, murmur32__for_different_inputs__should_return__different_hashes);
-    ADD_TEST(suite, murmur32__for_different_seeds__should_return__different_hashes);
+    // murmur128() suite
+    CU_pSuite suite_murmur128 = CU_add_suite("murmur128()", nullptr, nullptr);
+    if (suite_murmur128 == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_murmur128, murmur128__for_empty_data__should_return__deterministic_hash);
+    ADD_TEST(suite_murmur128, murmur128__for_empty_data_with_different_seeds__should_return__different_hashes);
+    ADD_TEST(suite_murmur128, murmur128__for_same_input__should_return__same_hash);
+    ADD_TEST(suite_murmur128, murmur128__for_different_inputs__should_return__different_hashes);
+    ADD_TEST(suite_murmur128, murmur128__for_different_seeds__should_return__different_hashes);
+    ADD_TEST(suite_murmur128, murmur128__for_various_tail_sizes__should_produce__unique_hashes);
+    ADD_TEST(suite_murmur128, murmur128__for_16_bytes__should_return__valid_hash);
+    ADD_TEST(suite_murmur128, murmur128__for_large_input__should_return__valid_hash);
+    ADD_TEST(suite_murmur128, murmur128__for_data_with_null_bytes__should_hash_all_bytes);
 
-    // murmur32 tests - tail handling
-    ADD_TEST(suite, murmur32__for_1_byte__should_return__valid_hash);
-    ADD_TEST(suite, murmur32__for_2_bytes__should_return__valid_hash);
-    ADD_TEST(suite, murmur32__for_3_bytes__should_return__valid_hash);
-    ADD_TEST(suite, murmur32__for_4_bytes__should_return__valid_hash);
-    ADD_TEST(suite, murmur32__for_5_bytes__should_return__valid_hash);
-    ADD_TEST(suite, murmur32__for_various_tail_sizes__should_produce__unique_hashes);
+    // hash32/64/128 macros suite
+    CU_pSuite suite_hash_macros = CU_add_suite("hash macros", nullptr, nullptr);
+    if (suite_hash_macros == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_hash_macros, hash32_macro__should_use__default_seed);
+    ADD_TEST(suite_hash_macros, hash64_macro__should_use__default_seed);
+    ADD_TEST(suite_hash_macros, hash128_macro__should_use__default_seed);
 
-    // murmur64 tests - empty input
-    ADD_TEST(suite, murmur64__for_empty_data__should_return__deterministic_hash);
-    ADD_TEST(suite, murmur64__for_empty_data_with_different_seeds__should_return__different_hashes);
+    // hash128_eq() suite
+    CU_pSuite suite_hash128_eq = CU_add_suite("hash128_eq()", nullptr, nullptr);
+    if (suite_hash128_eq == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_hash128_eq, hash128_eq__for_equal_hashes__should_return__true);
+    ADD_TEST(suite_hash128_eq, hash128_eq__for_different_h1__should_return__false);
+    ADD_TEST(suite_hash128_eq, hash128_eq__for_different_h2__should_return__false);
+    ADD_TEST(suite_hash128_eq, hash128_eq__for_computed_hashes__should_return__true_when_equal);
 
-    // murmur64 tests - basic functionality
-    ADD_TEST(suite, murmur64__for_same_input__should_return__same_hash);
-    ADD_TEST(suite, murmur64__for_different_inputs__should_return__different_hashes);
-    ADD_TEST(suite, murmur64__for_different_seeds__should_return__different_hashes);
+    // hash_combine() suite
+    CU_pSuite suite_hash_combine = CU_add_suite("hash_combine()", nullptr, nullptr);
+    if (suite_hash_combine == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_hash_combine, hash_combine__for_same_inputs__should_return__same_hash);
+    ADD_TEST(suite_hash_combine, hash_combine__for_different_order__should_return__different_hash);
+    ADD_TEST(suite_hash_combine, hash_combine__for_zero_values__should_return__nonzero_hash);
+    ADD_TEST(suite_hash_combine, hash_combine__for_chained_calls__should_be__deterministic);
 
-    // murmur64 tests - tail handling
-    ADD_TEST(suite, murmur64__for_various_tail_sizes__should_produce__unique_hashes);
+    // hash() generic macro suite
+    CU_pSuite suite_hash = CU_add_suite("hash()", nullptr, nullptr);
+    if (suite_hash == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_hash, hash__for_integers__should_return__deterministic_hash);
+    ADD_TEST(suite_hash, hash__for_different_integers__should_return__different_hashes);
+    ADD_TEST(suite_hash, hash__for_negative_integers__should_return__valid_hash);
+    ADD_TEST(suite_hash, hash__for_various_int_types__should_return__valid_hashes);
+    ADD_TEST(suite_hash, hash64__for_pointer_address__should_return__deterministic_hash);
+    ADD_TEST(suite_hash, hash64__for_different_pointer_addresses__should_return__different_hashes);
+    ADD_TEST(suite_hash, hash64__for_null_pointer__should_return__valid_hash);
+    ADD_TEST(suite_hash, hash__for_floats__should_return__deterministic_hash);
+    ADD_TEST(suite_hash, hash__for_negative_zero__should_equal__positive_zero);
 
-    // murmur128 tests - empty input
-    ADD_TEST(suite, murmur128__for_empty_data__should_return__deterministic_hash);
-    ADD_TEST(suite, murmur128__for_empty_data_with_different_seeds__should_return__different_hashes);
+    // hash_float() suite
+    CU_pSuite suite_hash_float = CU_add_suite("hash_float()", nullptr, nullptr);
+    if (suite_hash_float == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_hash_float, hash_float__for_same_input__should_return__same_hash);
+    ADD_TEST(suite_hash_float, hash_float__for_different_inputs__should_return__different_hashes);
+    ADD_TEST(suite_hash_float, hash_float__for_negative_zero__should_equal__positive_zero);
 
-    // murmur128 tests - basic functionality
-    ADD_TEST(suite, murmur128__for_same_input__should_return__same_hash);
-    ADD_TEST(suite, murmur128__for_different_inputs__should_return__different_hashes);
-    ADD_TEST(suite, murmur128__for_different_seeds__should_return__different_hashes);
+    // hash_double() suite
+    CU_pSuite suite_hash_double = CU_add_suite("hash_double()", nullptr, nullptr);
+    if (suite_hash_double == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_hash_double, hash_double__for_same_input__should_return__same_hash);
+    ADD_TEST(suite_hash_double, hash_double__for_different_inputs__should_return__different_hashes);
+    ADD_TEST(suite_hash_double, hash_double__for_negative_zero__should_equal__positive_zero);
 
-    // murmur128 tests - tail handling
-    ADD_TEST(suite, murmur128__for_various_tail_sizes__should_produce__unique_hashes);
-    ADD_TEST(suite, murmur128__for_16_bytes__should_return__valid_hash);
+    // hash_mix() suite
+    CU_pSuite suite_hash_mix = CU_add_suite("hash_mix()", nullptr, nullptr);
+    if (suite_hash_mix == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_hash_mix, hash_mix__for_same_input__should_return__same_output);
+    ADD_TEST(suite_hash_mix, hash_mix__for_zero__should_return__deterministic);
+    ADD_TEST(suite_hash_mix, hash_mix__for_sequential_inputs__should_produce__varied_outputs);
 
-    // convenience macro tests
-    ADD_TEST(suite, hash32_macro__should_use__default_seed);
-    ADD_TEST(suite, hash64_macro__should_use__default_seed);
-    ADD_TEST(suite, hash128_macro__should_use__default_seed);
-
-    // hash128_eq tests
-    ADD_TEST(suite, hash128_eq__for_equal_hashes__should_return__true);
-    ADD_TEST(suite, hash128_eq__for_different_h1__should_return__false);
-    ADD_TEST(suite, hash128_eq__for_different_h2__should_return__false);
-    ADD_TEST(suite, hash128_eq__for_computed_hashes__should_return__true_when_equal);
-
-    // hash_combine tests
-    ADD_TEST(suite, hash_combine__for_same_inputs__should_return__same_hash);
-    ADD_TEST(suite, hash_combine__for_different_order__should_return__different_hash);
-    ADD_TEST(suite, hash_combine__for_zero_values__should_return__nonzero_hash);
-    ADD_TEST(suite, hash_combine__for_chained_calls__should_be__deterministic);
-
-    // security tests - large inputs
-    ADD_TEST(suite, murmur32__for_large_input__should_return__valid_hash);
-    ADD_TEST(suite, murmur64__for_large_input__should_return__valid_hash);
-    ADD_TEST(suite, murmur128__for_large_input__should_return__valid_hash);
-
-    // security tests - binary data with null bytes
-    ADD_TEST(suite, murmur32__for_data_with_null_bytes__should_hash_all_bytes);
-    ADD_TEST(suite, murmur64__for_data_with_null_bytes__should_hash_all_bytes);
-    ADD_TEST(suite, murmur128__for_data_with_null_bytes__should_hash_all_bytes);
-
-    // avalanche tests
-    ADD_TEST(suite, murmur32__for_single_bit_change__should_produce__different_hash);
-    ADD_TEST(suite, murmur64__for_single_bit_change__should_produce__different_hash);
-
-    // distribution tests
-    ADD_TEST(suite, murmur32__for_sequential_keys__should_produce__varied_hashes);
-    ADD_TEST(suite, murmur64__for_sequential_keys__should_produce__varied_hashes);
-
-    // primitive hash tests - integers
-    ADD_TEST(suite, hash__for_integers__should_return__deterministic_hash);
-    ADD_TEST(suite, hash__for_different_integers__should_return__different_hashes);
-    ADD_TEST(suite, hash__for_negative_integers__should_return__valid_hash);
-    ADD_TEST(suite, hash__for_various_int_types__should_return__valid_hashes);
-
-    // pointer tests - using hash64 for buffer hashing
-    ADD_TEST(suite, hash64__for_pointer_address__should_return__deterministic_hash);
-    ADD_TEST(suite, hash64__for_different_pointer_addresses__should_return__different_hashes);
-    ADD_TEST(suite, hash64__for_null_pointer__should_return__valid_hash);
-
-    // hash_float and hash_double tests
-    ADD_TEST(suite, hash_float__for_same_input__should_return__same_hash);
-    ADD_TEST(suite, hash_float__for_different_inputs__should_return__different_hashes);
-    ADD_TEST(suite, hash_float__for_negative_zero__should_equal__positive_zero);
-    ADD_TEST(suite, hash_double__for_same_input__should_return__same_hash);
-    ADD_TEST(suite, hash_double__for_different_inputs__should_return__different_hashes);
-    ADD_TEST(suite, hash_double__for_negative_zero__should_equal__positive_zero);
-
-    // hash() macro tests with floats (via the macro dispatch)
-    ADD_TEST(suite, hash__for_floats__should_return__deterministic_hash);
-    ADD_TEST(suite, hash__for_negative_zero__should_equal__positive_zero);
-
-    // hash_mix and related tests
-    ADD_TEST(suite, hash_mix__for_same_input__should_return__same_output);
-    ADD_TEST(suite, hash_mix__for_zero__should_return__deterministic);
-    ADD_TEST(suite, hash_mix__for_sequential_inputs__should_produce__varied_outputs);
-
-    // xxhash64 tests - empty input
-    ADD_TEST(suite, xxhash64__for_empty_data__should_return__deterministic_hash);
-    ADD_TEST(suite, xxhash64__for_empty_data_with_different_seeds__should_return__different_hashes);
-
-    // xxhash64 tests - basic functionality
-    ADD_TEST(suite, xxhash64__for_same_input__should_return__same_hash);
-    ADD_TEST(suite, xxhash64__for_different_inputs__should_return__different_hashes);
-    ADD_TEST(suite, xxhash64__for_different_seeds__should_return__different_hashes);
-
-    // xxhash64 tests - tail handling and thresholds
-    ADD_TEST(suite, xxhash64__for_1_byte__should_return__valid_hash);
-    ADD_TEST(suite, xxhash64__for_2_bytes__should_return__valid_hash);
-    ADD_TEST(suite, xxhash64__for_4_bytes__should_return__valid_hash);
-    ADD_TEST(suite, xxhash64__for_8_bytes__should_return__valid_hash);
-    ADD_TEST(suite, xxhash64__for_various_tail_sizes__should_produce__unique_hashes);
-    ADD_TEST(suite, xxhash64__for_32_byte_threshold__should_use_parallel_processing);
-
-    // xxhash64 tests - large inputs
-    ADD_TEST(suite, xxhash64__for_large_input__should_return__valid_hash);
-    ADD_TEST(suite, xxhash64__for_very_large_input__should_return__valid_hash);
-
-    // xxhash64 tests - binary data with null bytes
-    ADD_TEST(suite, xxhash64__for_data_with_null_bytes__should_hash_all_bytes);
-
-    // xxhash64 tests - avalanche properties
-    ADD_TEST(suite, xxhash64__for_single_bit_change__should_produce__different_hash);
-    ADD_TEST(suite, xxhash64__for_last_byte_change__should_produce__different_hash);
-
-    // xxhash64 tests - distribution
-    ADD_TEST(suite, xxhash64__for_sequential_keys__should_produce__varied_hashes);
-
-    // xxhash64 convenience macro tests
-    ADD_TEST(suite, xxhash64_default_macro__should_use__default_seed);
-
-    // xxhash64 vs murmur64 comparison tests
-    ADD_TEST(suite, xxhash64__should_differ_from_murmur64__for_same_input);
-    ADD_TEST(suite, xxhash64_and_murmur64__should_be_deterministic_independently);
+    // xxhash64() suite
+    CU_pSuite suite_xxhash64 = CU_add_suite("xxhash64()", nullptr, nullptr);
+    if (suite_xxhash64 == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_xxhash64, xxhash64__for_empty_data__should_return__deterministic_hash);
+    ADD_TEST(suite_xxhash64, xxhash64__for_empty_data_with_different_seeds__should_return__different_hashes);
+    ADD_TEST(suite_xxhash64, xxhash64__for_same_input__should_return__same_hash);
+    ADD_TEST(suite_xxhash64, xxhash64__for_different_inputs__should_return__different_hashes);
+    ADD_TEST(suite_xxhash64, xxhash64__for_different_seeds__should_return__different_hashes);
+    ADD_TEST(suite_xxhash64, xxhash64__for_1_byte__should_return__valid_hash);
+    ADD_TEST(suite_xxhash64, xxhash64__for_2_bytes__should_return__valid_hash);
+    ADD_TEST(suite_xxhash64, xxhash64__for_4_bytes__should_return__valid_hash);
+    ADD_TEST(suite_xxhash64, xxhash64__for_8_bytes__should_return__valid_hash);
+    ADD_TEST(suite_xxhash64, xxhash64__for_various_tail_sizes__should_produce__unique_hashes);
+    ADD_TEST(suite_xxhash64, xxhash64__for_32_byte_threshold__should_use_parallel_processing);
+    ADD_TEST(suite_xxhash64, xxhash64__for_large_input__should_return__valid_hash);
+    ADD_TEST(suite_xxhash64, xxhash64__for_very_large_input__should_return__valid_hash);
+    ADD_TEST(suite_xxhash64, xxhash64__for_data_with_null_bytes__should_hash_all_bytes);
+    ADD_TEST(suite_xxhash64, xxhash64__for_single_bit_change__should_produce__different_hash);
+    ADD_TEST(suite_xxhash64, xxhash64__for_last_byte_change__should_produce__different_hash);
+    ADD_TEST(suite_xxhash64, xxhash64__for_sequential_keys__should_produce__varied_hashes);
+    ADD_TEST(suite_xxhash64, xxhash64_default_macro__should_use__default_seed);
+    ADD_TEST(suite_xxhash64, xxhash64__should_differ_from_murmur64__for_same_input);
+    ADD_TEST(suite_xxhash64, xxhash64_and_murmur64__should_be_deterministic_independently);
 
     CU_basic_set_mode(CU_BRM_VERBOSE);
     CU_basic_run_tests();

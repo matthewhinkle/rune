@@ -20,9 +20,9 @@
 #include <limits.h>
 #undef T
 
-// ---------------------------------------------------------------------------------------------------------------------
-// list creation
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// list() - Create list
+// =====================================================================================================================
 
 static void list__for_single_element__should_return__list_with_size_one(void) {
     LIST(int) lst = list(int, 42);
@@ -52,9 +52,9 @@ static void list__for_empty__should_return__list_with_zero_size(void) {
     list_free(&lst);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// list_add tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// list_add() - Add element to list
+// =====================================================================================================================
 
 static void list_add__for_single_item__should_add_to_empty_list(void) {
     LIST(int) lst = list(int);
@@ -98,9 +98,9 @@ static void list_add__for_many_items__should_trigger_multiple_growths(void) {
     list_free(&lst);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// list_insert tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// list_insert() - Insert element at index
+// =====================================================================================================================
 
 static void list_insert__at_beginning__should_shift_elements(void) {
     LIST(int) lst = list(int, 1, 2, 3);
@@ -139,9 +139,9 @@ static void list_insert__at_end__should_append_element(void) {
     list_free(&lst);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// list_remove tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// list_remove() - Remove element at index
+// =====================================================================================================================
 
 static void list_remove__from_beginning__should_shift_elements(void) {
     LIST(int) lst = list(int, 1, 2, 3, 4);
@@ -193,9 +193,9 @@ static void list_remove__all_elements__should_empty_list(void) {
     list_free(&lst);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// list_resize tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// list_resize() - Resize list capacity
+// =====================================================================================================================
 
 static void list_resize__to_larger_capacity__should_grow_list(void) {
     LIST(int) lst = list(int, 1, 2, 3);
@@ -230,9 +230,9 @@ static void list_resize__to_smaller_capacity__should_shrink_list(void) {
     list_free(&lst);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// list_grow/shrink tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// list_grow() - Grow list capacity
+// =====================================================================================================================
 
 static void list_grow__on_empty_list__should_allocate_initial_capacity(void) {
     LIST(int) lst = list(int);
@@ -255,9 +255,9 @@ static void list_grow__when_full__should_double_capacity(void) {
     list_free(&lst);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// list_free tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// list_free() - Free list memory
+// =====================================================================================================================
 
 static void list_free__on_list__should_deallocate_and_reset(void) {
     LIST(int) lst = list(int, 1, 2, 3);
@@ -280,12 +280,8 @@ static void list_free__on_empty_list__should_be_safe(void) {
 }
 
 // =====================================================================================================================
-// LOCK-FREE QUEUE TESTS
+// lfq() - Create lock-free queue
 // =====================================================================================================================
-
-// ---------------------------------------------------------------------------------------------------------------------
-// lfq creation
-// ---------------------------------------------------------------------------------------------------------------------
 
 static void lfq__for_capacity__should_return__initialized_queue(void) {
     LFQ(int) q = lfq(int, 10);
@@ -303,9 +299,9 @@ static void lfq__with_initial_elements__should_add_all_elements(void) {
     lfq_free(&q);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// lfq_push/pop tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// lfq_push() / lfq_pop() - Queue push and pop operations
+// =====================================================================================================================
 
 static void lfq_push__single_item__should_add_to_queue(void) {
     LFQ(int) q = lfq(int, 10);
@@ -368,9 +364,9 @@ static void lfq_pop__when_empty__should_return__end_marker(void) {
     lfq_free(&q);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// lfq_peek tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// lfq_peek() - Peek at queue front
+// =====================================================================================================================
 
 static void lfq_peek__with_item__should_return__item_without_removing(void) {
     LFQ(int) q = lfq(int, 10, 42);
@@ -392,9 +388,9 @@ static void lfq_peek__when_empty__should_return__end_marker(void) {
     lfq_free(&q);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// lfq_empty/full tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// lfq_empty() / lfq_full() - Queue empty and full checks
+// =====================================================================================================================
 
 static void lfq_empty__on_new_queue__should_return__true(void) {
     LFQ(int) q = lfq(int, 10);
@@ -423,9 +419,9 @@ static void lfq_full__when_full__should_return__true(void) {
     lfq_free(&q);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// lfq_clear tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// lfq_clear() - Clear queue
+// =====================================================================================================================
 
 static void lfq_clear__on_queue_with_items__should_reset_pointers(void) {
     LFQ(int) q = lfq(int, 10, 1, 2, 3);
@@ -438,9 +434,9 @@ static void lfq_clear__on_queue_with_items__should_reset_pointers(void) {
     lfq_free(&q);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// lfq_resize tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// lfq_resize() - Resize queue capacity
+// =====================================================================================================================
 
 static void lfq_resize__to_larger_capacity__should_grow_queue(void) {
     LFQ(int) q = lfq(int, 5, 1, 2, 3);
@@ -451,9 +447,9 @@ static void lfq_resize__to_larger_capacity__should_grow_queue(void) {
     lfq_free(&q);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// lfq_free tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// lfq_free() - Free queue memory
+// =====================================================================================================================
 
 static void lfq_free__on_queue__should_deallocate_and_reset(void) {
     LFQ(int) q = lfq(int, 10, 1, 2, 3);
@@ -494,9 +490,8 @@ static void list__for_struct_type__should_work_correctly(void) {
     list_free(&lst);
 }
 
-
 // =====================================================================================================================
-// STRESS TESTS
+// Stress tests
 // =====================================================================================================================
 
 static void list__for_1000_adds__should_succeed(void) {
@@ -562,92 +557,159 @@ static void lfq__for_push_pop_cycles__should_maintain_fifo(void) {
     lfq_free(&q);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// main
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// Test suite registration
+// =====================================================================================================================
 
 int main(void) {
     if (CUE_SUCCESS != CU_initialize_registry()) {
         return CU_get_error();
     }
 
-    CU_pSuite suite = CU_add_suite("coll_tests", nullptr, nullptr);
-    if (suite == NULL) {
+    // list() suite
+    CU_pSuite suite_list = CU_add_suite("list()", nullptr, nullptr);
+    if (suite_list == nullptr) {
         CU_cleanup_registry();
         return CU_get_error();
     }
+    ADD_TEST(suite_list, list__for_single_element__should_return__list_with_size_one);
+    ADD_TEST(suite_list, list__for_multiple_elements__should_return__list_with_all_elements);
+    ADD_TEST(suite_list, list__for_empty__should_return__list_with_zero_size);
+    ADD_TEST(suite_list, list__for_struct_type__should_work_correctly);
 
-    // LIST creation tests
-    ADD_TEST(suite, list__for_single_element__should_return__list_with_size_one);
-    ADD_TEST(suite, list__for_multiple_elements__should_return__list_with_all_elements);
-    ADD_TEST(suite, list__for_empty__should_return__list_with_zero_size);
+    // list_add() suite
+    CU_pSuite suite_list_add = CU_add_suite("list_add()", nullptr, nullptr);
+    if (suite_list_add == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_list_add, list_add__for_single_item__should_add_to_empty_list);
+    ADD_TEST(suite_list_add, list_add__for_multiple_items__should_grow_list);
+    ADD_TEST(suite_list_add, list_add__for_many_items__should_trigger_multiple_growths);
 
-    // list_add tests
-    ADD_TEST(suite, list_add__for_single_item__should_add_to_empty_list);
-    ADD_TEST(suite, list_add__for_multiple_items__should_grow_list);
-    ADD_TEST(suite, list_add__for_many_items__should_trigger_multiple_growths);
+    // list_insert() suite
+    CU_pSuite suite_list_insert = CU_add_suite("list_insert()", nullptr, nullptr);
+    if (suite_list_insert == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_list_insert, list_insert__at_beginning__should_shift_elements);
+    ADD_TEST(suite_list_insert, list_insert__at_middle__should_shift_elements);
+    ADD_TEST(suite_list_insert, list_insert__at_end__should_append_element);
 
-    // list_insert tests
-    ADD_TEST(suite, list_insert__at_beginning__should_shift_elements);
-    ADD_TEST(suite, list_insert__at_middle__should_shift_elements);
-    ADD_TEST(suite, list_insert__at_end__should_append_element);
+    // list_remove() suite
+    CU_pSuite suite_list_remove = CU_add_suite("list_remove()", nullptr, nullptr);
+    if (suite_list_remove == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_list_remove, list_remove__from_beginning__should_shift_elements);
+    ADD_TEST(suite_list_remove, list_remove__from_middle__should_shift_elements);
+    ADD_TEST(suite_list_remove, list_remove__from_end__should_remove_last_element);
+    ADD_TEST(suite_list_remove, list_remove__all_elements__should_empty_list);
 
-    // list_remove tests
-    ADD_TEST(suite, list_remove__from_beginning__should_shift_elements);
-    ADD_TEST(suite, list_remove__from_middle__should_shift_elements);
-    ADD_TEST(suite, list_remove__from_end__should_remove_last_element);
-    ADD_TEST(suite, list_remove__all_elements__should_empty_list);
+    // list_resize() suite
+    CU_pSuite suite_list_resize = CU_add_suite("list_resize()", nullptr, nullptr);
+    if (suite_list_resize == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_list_resize, list_resize__to_larger_capacity__should_grow_list);
+    ADD_TEST(suite_list_resize, list_resize__to_smaller_capacity__should_shrink_list);
 
-    // list_resize tests
-    ADD_TEST(suite, list_resize__to_larger_capacity__should_grow_list);
-    ADD_TEST(suite, list_resize__to_smaller_capacity__should_shrink_list);
+    // list_grow() suite
+    CU_pSuite suite_list_grow = CU_add_suite("list_grow()", nullptr, nullptr);
+    if (suite_list_grow == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_list_grow, list_grow__on_empty_list__should_allocate_initial_capacity);
+    ADD_TEST(suite_list_grow, list_grow__when_full__should_double_capacity);
 
-    // list_grow/shrink tests
-    ADD_TEST(suite, list_grow__on_empty_list__should_allocate_initial_capacity);
-    ADD_TEST(suite, list_grow__when_full__should_double_capacity);
+    // list_free() suite
+    CU_pSuite suite_list_free = CU_add_suite("list_free()", nullptr, nullptr);
+    if (suite_list_free == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_list_free, list_free__on_list__should_deallocate_and_reset);
+    ADD_TEST(suite_list_free, list_free__on_empty_list__should_be_safe);
 
-    // list_free tests
-    ADD_TEST(suite, list_free__on_list__should_deallocate_and_reset);
-    ADD_TEST(suite, list_free__on_empty_list__should_be_safe);
+    // lfq() suite
+    CU_pSuite suite_lfq = CU_add_suite("lfq()", nullptr, nullptr);
+    if (suite_lfq == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_lfq, lfq__for_capacity__should_return__initialized_queue);
+    ADD_TEST(suite_lfq, lfq__with_initial_elements__should_add_all_elements);
 
-    // LFQ creation tests
-    ADD_TEST(suite, lfq__for_capacity__should_return__initialized_queue);
-    ADD_TEST(suite, lfq__with_initial_elements__should_add_all_elements);
+    // lfq_push() / lfq_pop() suite
+    CU_pSuite suite_lfq_push_pop = CU_add_suite("lfq_push() / lfq_pop()", nullptr, nullptr);
+    if (suite_lfq_push_pop == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_lfq_push_pop, lfq_push__single_item__should_add_to_queue);
+    ADD_TEST(suite_lfq_push_pop, lfq_push__multiple_items__should_add_all);
+    ADD_TEST(suite_lfq_push_pop, lfq_push__when_full__should_return__end_marker);
+    ADD_TEST(suite_lfq_push_pop, lfq_pop__single_item__should_remove_from_queue);
+    ADD_TEST(suite_lfq_push_pop, lfq_pop__multiple_items__should_fifo_order);
+    ADD_TEST(suite_lfq_push_pop, lfq_pop__when_empty__should_return__end_marker);
 
-    // lfq_push/pop tests
-    ADD_TEST(suite, lfq_push__single_item__should_add_to_queue);
-    ADD_TEST(suite, lfq_push__multiple_items__should_add_all);
-    ADD_TEST(suite, lfq_push__when_full__should_return__end_marker);
-    ADD_TEST(suite, lfq_pop__single_item__should_remove_from_queue);
-    ADD_TEST(suite, lfq_pop__multiple_items__should_fifo_order);
-    ADD_TEST(suite, lfq_pop__when_empty__should_return__end_marker);
+    // lfq_peek() suite
+    CU_pSuite suite_lfq_peek = CU_add_suite("lfq_peek()", nullptr, nullptr);
+    if (suite_lfq_peek == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_lfq_peek, lfq_peek__with_item__should_return__item_without_removing);
+    ADD_TEST(suite_lfq_peek, lfq_peek__when_empty__should_return__end_marker);
 
-    // lfq_peek tests
-    ADD_TEST(suite, lfq_peek__with_item__should_return__item_without_removing);
-    ADD_TEST(suite, lfq_peek__when_empty__should_return__end_marker);
+    // lfq_empty() / lfq_full() suite
+    CU_pSuite suite_lfq_empty_full = CU_add_suite("lfq_empty() / lfq_full()", nullptr, nullptr);
+    if (suite_lfq_empty_full == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_lfq_empty_full, lfq_empty__on_new_queue__should_return__true);
+    ADD_TEST(suite_lfq_empty_full, lfq_empty__with_item__should_return__false);
+    ADD_TEST(suite_lfq_empty_full, lfq_full__with_space__should_return__false);
+    ADD_TEST(suite_lfq_empty_full, lfq_full__when_full__should_return__true);
 
-    // lfq_empty/full tests
-    ADD_TEST(suite, lfq_empty__on_new_queue__should_return__true);
-    ADD_TEST(suite, lfq_empty__with_item__should_return__false);
-    ADD_TEST(suite, lfq_full__with_space__should_return__false);
-    ADD_TEST(suite, lfq_full__when_full__should_return__true);
+    // lfq_clear() suite
+    CU_pSuite suite_lfq_clear = CU_add_suite("lfq_clear()", nullptr, nullptr);
+    if (suite_lfq_clear == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_lfq_clear, lfq_clear__on_queue_with_items__should_reset_pointers);
 
-    // lfq_clear tests
-    ADD_TEST(suite, lfq_clear__on_queue_with_items__should_reset_pointers);
+    // lfq_resize() suite
+    CU_pSuite suite_lfq_resize = CU_add_suite("lfq_resize()", nullptr, nullptr);
+    if (suite_lfq_resize == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_lfq_resize, lfq_resize__to_larger_capacity__should_grow_queue);
 
-    // lfq_resize tests
-    ADD_TEST(suite, lfq_resize__to_larger_capacity__should_grow_queue);
+    // lfq_free() suite
+    CU_pSuite suite_lfq_free = CU_add_suite("lfq_free()", nullptr, nullptr);
+    if (suite_lfq_free == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_lfq_free, lfq_free__on_queue__should_deallocate_and_reset);
 
-    // lfq_free tests
-    ADD_TEST(suite, lfq_free__on_queue__should_deallocate_and_reset);
-
-    // Complex type tests
-    ADD_TEST(suite, list__for_struct_type__should_work_correctly);
-
-    // Stress tests
-    ADD_TEST(suite, list__for_1000_adds__should_succeed);
-    ADD_TEST(suite, list__for_alternating_add_remove__should_maintain_order);
-    ADD_TEST(suite, lfq__for_push_pop_cycles__should_maintain_fifo);
+    // Stress tests suite
+    CU_pSuite suite_stress = CU_add_suite("Stress tests", nullptr, nullptr);
+    if (suite_stress == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_stress, list__for_1000_adds__should_succeed);
+    ADD_TEST(suite_stress, list__for_alternating_add_remove__should_maintain_order);
+    ADD_TEST(suite_stress, lfq__for_push_pop_cycles__should_maintain_fifo);
 
     CU_basic_set_mode(CU_BRM_VERBOSE);
     CU_basic_run_tests();

@@ -1460,86 +1460,124 @@ static void rbt__with_custom_comparator__should_use_custom_comparison(void) {
     rbt_tree_free_tree(tree.root);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// main
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// Test suite registration
+// =====================================================================================================================
 
 int main(void) {
     if (CUE_SUCCESS != CU_initialize_registry()) {
         return CU_get_error();
     }
 
-    CU_pSuite suite = CU_add_suite("tree_tests", nullptr, nullptr);
-    if (suite == NULL) {
+    // bst_min() suite
+    CU_pSuite suite_bst_min = CU_add_suite("bst_min()", nullptr, nullptr);
+    if (suite_bst_min == nullptr) {
         CU_cleanup_registry();
         return CU_get_error();
     }
+    ADD_TEST(suite_bst_min, bst_min__for_single_node__should_return_node);
+    ADD_TEST(suite_bst_min, bst_min__for_left_skewed_tree__should_return_leftmost_node);
+    ADD_TEST(suite_bst_min, bst_min__for_subtree__should_return_minimum_in_subtree);
 
-    // BST API tests
-    ADD_TEST(suite, bst_min__for_single_node__should_return_node);
-    ADD_TEST(suite, bst_min__for_left_skewed_tree__should_return_leftmost_node);
-    ADD_TEST(suite, bst_min__for_subtree__should_return_minimum_in_subtree);
-    ADD_TEST(suite, bst_find__for_empty_tree__should_return_null);
-    ADD_TEST(suite, bst_find__for_existing_value__should_return_node);
-    ADD_TEST(suite, bst_find__for_non_existing_value__should_return_null);
-    ADD_TEST(suite, bst_remove__for_leaf_node__should_remove_and_update_parent);
-    ADD_TEST(suite, bst_remove__for_node_with_one_child__should_promote_child);
-    ADD_TEST(suite, bst_remove__for_node_with_two_children__should_replace_with_successor);
-    ADD_TEST(suite, bst_remove__for_root_node_with_two_children__should_maintain_tree_structure);
-    ADD_TEST(suite, bst_remove__for_sequential_removal__should_maintain_bst_property);
+    // bst_find() suite
+    CU_pSuite suite_bst_find = CU_add_suite("bst_find()", nullptr, nullptr);
+    if (suite_bst_find == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_bst_find, bst_find__for_empty_tree__should_return_null);
+    ADD_TEST(suite_bst_find, bst_find__for_existing_value__should_return_node);
+    ADD_TEST(suite_bst_find, bst_find__for_non_existing_value__should_return_null);
 
-    // RBT contains tests
-    ADD_TEST(suite, rbt_contains__for_empty_tree__should_return_false);
-    ADD_TEST(suite, rbt_contains__for_single_element_tree__should_find_element);
-    ADD_TEST(suite, rbt_contains__for_multiple_elements__should_find_all);
-    ADD_TEST(suite, rbt_contains__for_left_skewed_tree__should_find_elements);
-    ADD_TEST(suite, rbt_contains__for_right_skewed_tree__should_find_elements);
-    ADD_TEST(suite, rbt_contains__for_balanced_tree__should_find_all_elements);
-    ADD_TEST(suite, rbt_contains__for_negative_values__should_find_elements);
-    ADD_TEST(suite, rbt_contains__for_large_tree__should_find_all_values);
-    ADD_TEST(suite, rbt_contains__for_duplicate_insertion__should_still_find_value);
-    ADD_TEST(suite, rbt_contains__for_boundary_values__should_find_extremes);
+    // bst_remove() suite
+    CU_pSuite suite_bst_remove = CU_add_suite("bst_remove()", nullptr, nullptr);
+    if (suite_bst_remove == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_bst_remove, bst_remove__for_leaf_node__should_remove_and_update_parent);
+    ADD_TEST(suite_bst_remove, bst_remove__for_node_with_one_child__should_promote_child);
+    ADD_TEST(suite_bst_remove, bst_remove__for_node_with_two_children__should_replace_with_successor);
+    ADD_TEST(suite_bst_remove, bst_remove__for_root_node_with_two_children__should_maintain_tree_structure);
+    ADD_TEST(suite_bst_remove, bst_remove__for_sequential_removal__should_maintain_bst_property);
 
-    // RBT insertion tests
-    ADD_TEST(suite, rbt_insert__for_empty_tree__should_create_root_node);
-    ADD_TEST(suite, rbt_insert__for_simple_sequence__should_create_valid_tree);
-    ADD_TEST(suite, rbt_insert__for_duplicate_value__should_ignore);
-    ADD_TEST(suite, rbt_insert__for_red_uncle__should_recolor_and_propagate);
-    ADD_TEST(suite, rbt_insert__for_left_left_case__should_maintain_invariants);
-    ADD_TEST(suite, rbt_insert__for_left_right_case__should_maintain_invariants);
-    ADD_TEST(suite, rbt_insert__for_right_right_case__should_maintain_invariants);
-    ADD_TEST(suite, rbt_insert__for_right_left_case__should_maintain_invariants);
-    ADD_TEST(suite, rbt_insert__for_seven_node_tree__should_maintain_all_invariants);
-    ADD_TEST(suite, rbt_insert__for_descending_ten_nodes__should_maintain_all_invariants);
-    ADD_TEST(suite, rbt_insert__for_mixed_insertion_pattern__should_maintain_all_invariants);
+    // rbt_contains() suite
+    CU_pSuite suite_rbt_contains = CU_add_suite("rbt_contains()", nullptr, nullptr);
+    if (suite_rbt_contains == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_rbt_contains, rbt_contains__for_empty_tree__should_return_false);
+    ADD_TEST(suite_rbt_contains, rbt_contains__for_single_element_tree__should_find_element);
+    ADD_TEST(suite_rbt_contains, rbt_contains__for_multiple_elements__should_find_all);
+    ADD_TEST(suite_rbt_contains, rbt_contains__for_left_skewed_tree__should_find_elements);
+    ADD_TEST(suite_rbt_contains, rbt_contains__for_right_skewed_tree__should_find_elements);
+    ADD_TEST(suite_rbt_contains, rbt_contains__for_balanced_tree__should_find_all_elements);
+    ADD_TEST(suite_rbt_contains, rbt_contains__for_negative_values__should_find_elements);
+    ADD_TEST(suite_rbt_contains, rbt_contains__for_large_tree__should_find_all_values);
+    ADD_TEST(suite_rbt_contains, rbt_contains__for_duplicate_insertion__should_still_find_value);
+    ADD_TEST(suite_rbt_contains, rbt_contains__for_boundary_values__should_find_extremes);
 
-    // RBT removal tests
-    ADD_TEST(suite, rbt_remove__for_empty_tree__should_handle_gracefully);
-    ADD_TEST(suite, rbt_remove__for_single_node_root__should_delete_node);
-    ADD_TEST(suite, rbt_remove__for_red_leaf__should_maintain_invariants);
-    ADD_TEST(suite, rbt_remove__for_black_leaf__should_handle_double_black);
-    ADD_TEST(suite, rbt_remove__for_node_with_one_child__should_replace_with_child);
-    ADD_TEST(suite, rbt_remove__for_node_with_two_children__should_replace_with_successor);
-    ADD_TEST(suite, rbt_remove__for_sequential_single_deletions__should_maintain_invariants);
-    ADD_TEST(suite, rbt_remove__for_reverse_sequential_deletions__should_maintain_invariants);
-    ADD_TEST(suite, rbt_remove__for_deletion_from_larger_tree__should_maintain_all_invariants);
-    ADD_TEST(suite, rbt_remove__for_removing_every_other_element__should_maintain_balance);
-    ADD_TEST(suite, rbt_remove__for_deletion_of_root__should_promote_successor);
-    ADD_TEST(suite, rbt_remove__for_stress_test_insert_remove_patterns__should_maintain_invariants);
+    // rbt_insert() suite
+    CU_pSuite suite_rbt_insert = CU_add_suite("rbt_insert()", nullptr, nullptr);
+    if (suite_rbt_insert == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_rbt_insert, rbt_insert__for_empty_tree__should_create_root_node);
+    ADD_TEST(suite_rbt_insert, rbt_insert__for_simple_sequence__should_create_valid_tree);
+    ADD_TEST(suite_rbt_insert, rbt_insert__for_duplicate_value__should_ignore);
+    ADD_TEST(suite_rbt_insert, rbt_insert__for_red_uncle__should_recolor_and_propagate);
+    ADD_TEST(suite_rbt_insert, rbt_insert__for_left_left_case__should_maintain_invariants);
+    ADD_TEST(suite_rbt_insert, rbt_insert__for_left_right_case__should_maintain_invariants);
+    ADD_TEST(suite_rbt_insert, rbt_insert__for_right_right_case__should_maintain_invariants);
+    ADD_TEST(suite_rbt_insert, rbt_insert__for_right_left_case__should_maintain_invariants);
+    ADD_TEST(suite_rbt_insert, rbt_insert__for_seven_node_tree__should_maintain_all_invariants);
+    ADD_TEST(suite_rbt_insert, rbt_insert__for_descending_ten_nodes__should_maintain_all_invariants);
+    ADD_TEST(suite_rbt_insert, rbt_insert__for_mixed_insertion_pattern__should_maintain_all_invariants);
 
-    // RBT size field tracking tests
-    ADD_TEST(suite, rbt_size__for_empty_tree__should_be_zero);
-    ADD_TEST(suite, rbt_size__after_single_insert__should_be_one);
-    ADD_TEST(suite, rbt_size__after_multiple_inserts__should_match_node_count);
-    ADD_TEST(suite, rbt_size__after_duplicate_insert__should_not_change);
-    ADD_TEST(suite, rbt_size__after_single_remove__should_decrement);
-    ADD_TEST(suite, rbt_size__after_multiple_removes__should_match_remaining_count);
-    ADD_TEST(suite, rbt_size__after_sequential_operations__should_track_correctly);
-    ADD_TEST(suite, rbt_size__after_stress_test__should_remain_consistent);
-    ADD_TEST(suite, rbt_size__after_removing_nonexistent_value__should_not_change);
+    // rbt_remove() suite
+    CU_pSuite suite_rbt_remove = CU_add_suite("rbt_remove()", nullptr, nullptr);
+    if (suite_rbt_remove == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_rbt_remove, rbt_remove__for_empty_tree__should_handle_gracefully);
+    ADD_TEST(suite_rbt_remove, rbt_remove__for_single_node_root__should_delete_node);
+    ADD_TEST(suite_rbt_remove, rbt_remove__for_red_leaf__should_maintain_invariants);
+    ADD_TEST(suite_rbt_remove, rbt_remove__for_black_leaf__should_handle_double_black);
+    ADD_TEST(suite_rbt_remove, rbt_remove__for_node_with_one_child__should_replace_with_child);
+    ADD_TEST(suite_rbt_remove, rbt_remove__for_node_with_two_children__should_replace_with_successor);
+    ADD_TEST(suite_rbt_remove, rbt_remove__for_sequential_single_deletions__should_maintain_invariants);
+    ADD_TEST(suite_rbt_remove, rbt_remove__for_reverse_sequential_deletions__should_maintain_invariants);
+    ADD_TEST(suite_rbt_remove, rbt_remove__for_deletion_from_larger_tree__should_maintain_all_invariants);
+    ADD_TEST(suite_rbt_remove, rbt_remove__for_removing_every_other_element__should_maintain_balance);
+    ADD_TEST(suite_rbt_remove, rbt_remove__for_deletion_of_root__should_promote_successor);
+    ADD_TEST(suite_rbt_remove, rbt_remove__for_stress_test_insert_remove_patterns__should_maintain_invariants);
 
-    // RBT custom comparator tests
-    ADD_TEST(suite, rbt__with_custom_comparator__should_use_custom_comparison);
+    // RBT() - size field tracking suite
+    CU_pSuite suite_rbt_size = CU_add_suite("RBT() size tracking", nullptr, nullptr);
+    if (suite_rbt_size == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_rbt_size, rbt_size__for_empty_tree__should_be_zero);
+    ADD_TEST(suite_rbt_size, rbt_size__after_single_insert__should_be_one);
+    ADD_TEST(suite_rbt_size, rbt_size__after_multiple_inserts__should_match_node_count);
+    ADD_TEST(suite_rbt_size, rbt_size__after_duplicate_insert__should_not_change);
+    ADD_TEST(suite_rbt_size, rbt_size__after_single_remove__should_decrement);
+    ADD_TEST(suite_rbt_size, rbt_size__after_multiple_removes__should_match_remaining_count);
+    ADD_TEST(suite_rbt_size, rbt_size__after_sequential_operations__should_track_correctly);
+    ADD_TEST(suite_rbt_size, rbt_size__after_stress_test__should_remain_consistent);
+    ADD_TEST(suite_rbt_size, rbt_size__after_removing_nonexistent_value__should_not_change);
+
+    // RBT() - custom comparator suite
+    CU_pSuite suite_rbt_comparator = CU_add_suite("RBT() custom comparator", nullptr, nullptr);
+    if (suite_rbt_comparator == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_rbt_comparator, rbt__with_custom_comparator__should_use_custom_comparison);
 
     CU_basic_set_mode(CU_BRM_VERBOSE);
     CU_basic_run_tests();

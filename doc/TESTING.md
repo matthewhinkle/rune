@@ -26,69 +26,64 @@ test/
 
 ```c
 /*
- * Module tests - brief description.
+ * Module tests.
  */
 
-#include "../src/r.h"        // Core runtime
-#include "../src/str.h"      // Or other module being tested
+#include "../src/str.h"
 #include "CUnit/Basic.h"
 #include "test.h"
 
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-// Test constants
+// Test constants (if needed)
 static const char *HELLO = "hello";
 static const size_t HELLO_LEN = 5;
 
 // Helper functions (if needed)
 static uint64_t helper_func(...) { ... }
 
-// ========================================================================
-// string creation tests
-// ========================================================================
+// =====================================================================================================================
+// function_name() - Description of what this function does
+// =====================================================================================================================
 
-static void str__for_nullptr__should_return__nullptr() {
-    // Arrange
-    const char *input = nullptr;
-
-    // Act
-    char *result = str(input);
-
-    // Assert
-    CU_ASSERT_PTR_NULL(result);
+static void test_function_basic() {
+    const char *s = function("input");
+    CU_ASSERT_PTR_NOT_NULL(s);
+    CU_ASSERT_FALSE(err_has());
+    function_free(s);
 }
 
-static void str__for_empty_cstr__should_return__nonnull() {
-    // Arrange
-    const char *input = "";
-
-    // Act
-    char *result = str(input);
-
-    // Assert
-    CU_ASSERT_PTR_NOT_NULL(result);
-    str_free(result);
+static void test_function_edge_case() {
+    const char *s = function(nullptr);
+    CU_ASSERT_PTR_NULL(s);
+    CU_ASSERT_TRUE(err_has());
+    err_clear();
 }
 
-// ========================================================================
-// main
-// ========================================================================
+// =====================================================================================================================
+// Test suite registration
+// =====================================================================================================================
 
 int main() {
     if (CUE_SUCCESS != CU_initialize_registry()) {
         return CU_get_error();
     }
 
-    CU_pSuite suite = CU_add_suite("str_tests", nullptr, nullptr);
-    if (suite == nullptr) {
+    // function1() suite
+    CU_pSuite suite_function1 = CU_add_suite("function1()", nullptr, nullptr);
+    if (suite_function1 == nullptr) {
         CU_cleanup_registry();
         return CU_get_error();
     }
+    ADD_TEST(suite_function1, test_function1_basic);
+    ADD_TEST(suite_function1, test_function1_edge_case);
 
-    ADD_TEST(suite, str__for_nullptr__should_return__nullptr);
-    ADD_TEST(suite, str__for_empty_cstr__should_return__nonnull);
+    // function2() suite
+    CU_pSuite suite_function2 = CU_add_suite("function2()", nullptr, nullptr);
+    if (suite_function2 == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_function2, test_function2_basic);
+    ADD_TEST(suite_function2, test_function2_null_input);
 
     CU_basic_set_mode(CU_BRM_VERBOSE);
     CU_basic_run_tests();
@@ -101,43 +96,68 @@ int main() {
 
 ### Test Functions
 
-Follow the pattern: `<function>__for_<input>__should_return__<expected>`
+Use descriptive names that clearly indicate what is being tested:
 
 ```c
-// Examples
-str__for_nullptr__should_return__nullptr
-str__for_empty_cstr__should_return__nonnull
-str__for_nonempty_cstr__should_return__rstr_with_str_len
-str_cat__for_two_strings__should_return__concatenated
+// Format: test_<function>_<scenario>
+static void test_str_default() { ... }
+static void test_str_with_max_len() { ... }
+static void test_str_empty() { ... }
+static void test_str_null_input() { ... }
 ```
 
 ### Test Suites
 
-Name suites after the module: `<module>_tests`
+**Important:** Create one dedicated CUnit test suite per function/macro being tested.
+
+Each suite should be:
+- Named after the function it tests (e.g., `"str()"`, `"strf()"`)
+- Created with a unique suite variable (e.g., `suite_str`, `suite_strf`)
+- Registered in `main()` with proper error handling
 
 ```c
-CU_add_suite("str_tests", nullptr, nullptr);
-CU_add_suite("list_tests", nullptr, nullptr);
+// One suite per function - each gets its own variable
+CU_pSuite suite_str = CU_add_suite("str()", nullptr, nullptr);
+CU_pSuite suite_strf = CU_add_suite("strf()", nullptr, nullptr);
+CU_pSuite suite_str_free = CU_add_suite("str_free()", nullptr, nullptr);
+CU_pSuite suite_str_len = CU_add_suite("str_len()", nullptr, nullptr);
 ```
+
+This organization provides:
+- Clear separation of tests by function
+- Better test reporting (suite name indicates which function is being tested)
+- Easier navigation and debugging
 
 ## Test Organization
 
-Group related tests with section dividers:
+Group tests by function using section dividers with function names and descriptions:
 
 ```c
-// ---------------
-// empty str tests
-// ---------------
+// =====================================================================================================================
+// str() - Create managed string
+// =====================================================================================================================
 
-static void str__for_empty_cstr__should_return__nonnull() { ... }
-static void str__for_empty_cstr__should_return__valid_rstr() { ... }
+static void test_str_default() {
+    const char *s = str("Hello");
+    CU_ASSERT_PTR_NOT_NULL(s);
+    str_free(s);
+}
 
-// ----------------------
-// non-empty string tests
-// ----------------------
+static void test_str_empty() {
+    const char *s = str("");
+    CU_ASSERT_PTR_NOT_NULL(s);
+    str_free(s);
+}
 
-static void str__for_nonempty_cstr__should_return__nonnull() { ... }
-static void str__for_nonempty_cstr__should_return__valid_rstr() { ... }
+// =====================================================================================================================
+// str_len() - Get string length
+// =====================================================================================================================
+
+static void test_str_len_managed() {
+    const char *s = str("Hello");
+    CU_ASSERT_EQUAL(str_len(s), 5);
+    str_free(s);
+}
 ```
 
 ## Helper Macros

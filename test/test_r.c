@@ -69,9 +69,9 @@ static void setup_test_allocator(void) {
     test_allocator.ctx = &test_stats;
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// macro tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// Macro tests
+// =====================================================================================================================
 
 static void R_GLUE__should__concatenate_tokens(void) {
 // Test token concatenation using R_GLUE
@@ -110,12 +110,8 @@ static void R_CLAMP__for_value_and_range__should_return__clamped_value(void) {
 }
 
 // =====================================================================================================================
-// DEFAULT ALLOCATOR TESTS
+// mem_alloc() - Allocate memory with default allocator
 // =====================================================================================================================
-
-// ---------------------------------------------------------------------------------------------------------------------
-// mem_alloc with default alloc
-// ---------------------------------------------------------------------------------------------------------------------
 
 static void mem_alloc__for_default_allocator__should_return__nonnull(void) {
     void * ptr = mem_alloc(100);
@@ -140,9 +136,9 @@ static void mem_alloc__for_size__should_return__writable_memory(void) {
     mem_free(ptr, 10);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// mem_alloc_zero tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// mem_alloc_zero() - Allocate zeroed memory
+// =====================================================================================================================
 
 static void mem_alloc_zero__for_count_and_size__should_return__zeroed_memory(void) {
     const size_t count = 10;
@@ -164,9 +160,9 @@ static void mem_alloc_zero__for_small_size__should_return__zeroed_byte(void) {
     mem_free(ptr, 1);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// mem_alloc_t and typed tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// mem_alloc() - Typed allocation tests
+// =====================================================================================================================
 
 static void mem_alloc_t__for_type__should_return__typed_pointer(void) {
     typedef struct {
@@ -202,9 +198,9 @@ static void mem_alloc_zero_t__for_count_and_type__should_return__zeroed_array(vo
     mem_free(arr, count * sizeof(Pair));
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// mem_realloc tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// mem_realloc() - Reallocate memory
+// =====================================================================================================================
 
 static void mem_realloc__for_larger_size__should_return__grown_allocation(void) {
     const size_t old_size = 10;
@@ -282,12 +278,8 @@ static void mem_realloc_t__for_larger_count__should_return__grown_typed_array(vo
 }
 
 // =====================================================================================================================
-// THREAD-LOCAL ALLOCATOR STACK TESTS
+// alloc_push() / alloc_pop() - Thread-local allocator stack tests
 // =====================================================================================================================
-
-// ---------------------------------------------------------------------------------------------------------------------
-// alloc_push/pop tests
-// ---------------------------------------------------------------------------------------------------------------------
 
 static void alloc_push__should_add_allocator_to_stack(void) {
     setup_test_allocator();
@@ -330,9 +322,9 @@ static void alloc_push__with_nested_allocators__should_use_topmost(void) {
     alloc_pop();
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// alloc_scope tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// alloc_scope() - Scoped allocator tests
+// =====================================================================================================================
 
 static void alloc_scope__should_push_and_pop_allocator(void) {
     setup_test_allocator();
@@ -401,7 +393,7 @@ static void alloc_scope__with_break__should_still_pop_allocator(void) {
 }
 
 // =====================================================================================================================
-// CUSTOM ALLOCATOR TESTS
+// Custom allocator tests
 // =====================================================================================================================
 
 static void mem_alloc__with_custom_allocator__should__call_custom_allocator(void) {
@@ -472,9 +464,9 @@ static void mem_alloc__with_custom_allocator__should__track_multiple_allocations
     }
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// stress tests
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// Stress tests
+// =====================================================================================================================
 
 static void mem_alloc__for_100_cycles__should__succeed(void) {
     for (int i = 0; i < 100; i++) {
@@ -506,63 +498,89 @@ static void mem_alloc__with_many_scope_entries__should__succeed(void) {
     CU_ASSERT_EQUAL(test_stats.free_count, 10);
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// main
-// ---------------------------------------------------------------------------------------------------------------------
+// =====================================================================================================================
+// Test suite registration
+// =====================================================================================================================
 
 int main(void) {
     if (CUE_SUCCESS != CU_initialize_registry()) {
         return CU_get_error();
     }
 
-    // ReSharper disable once CppLocalVariableMayBeConst
-    CU_pSuite suite = CU_add_suite("rune_tests", nullptr, nullptr);
-    if (suite == NULL) {
+    // R macros suite
+    CU_pSuite suite_macros = CU_add_suite("R macros", nullptr, nullptr);
+    if (suite_macros == nullptr) {
         CU_cleanup_registry();
         return CU_get_error();
     }
+    ADD_TEST(suite_macros, R_GLUE__should__concatenate_tokens);
+    ADD_TEST(suite_macros, R_MAX__for_two_values__should_return__maximum);
+    ADD_TEST(suite_macros, R_MIN__for_two_values__should_return__minimum);
+    ADD_TEST(suite_macros, R_CLAMP__for_value_and_range__should_return__clamped_value);
 
-    // Macro tests
-    ADD_TEST(suite, R_GLUE__should__concatenate_tokens);
-    ADD_TEST(suite, R_MAX__for_two_values__should_return__maximum);
-    ADD_TEST(suite, R_MIN__for_two_values__should_return__minimum);
-    ADD_TEST(suite, R_CLAMP__for_value_and_range__should_return__clamped_value);
+    // mem_alloc() suite
+    CU_pSuite suite_mem_alloc = CU_add_suite("mem_alloc()", nullptr, nullptr);
+    if (suite_mem_alloc == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_mem_alloc, mem_alloc__for_default_allocator__should_return__nonnull);
+    ADD_TEST(suite_mem_alloc, mem_alloc__for_size__should_return__writable_memory);
+    ADD_TEST(suite_mem_alloc, mem_alloc_t__for_type__should_return__typed_pointer);
+    ADD_TEST(suite_mem_alloc, mem_alloc__with_custom_allocator__should__call_custom_allocator);
+    ADD_TEST(suite_mem_alloc, mem_alloc__with_custom_allocator__should__track_multiple_allocations);
 
-    // Default allocator tests
-    ADD_TEST(suite, mem_alloc__for_default_allocator__should_return__nonnull);
-    ADD_TEST(suite, mem_alloc__for_size__should_return__writable_memory);
+    // mem_alloc_zero() suite
+    CU_pSuite suite_mem_alloc_zero = CU_add_suite("mem_alloc_zero()", nullptr, nullptr);
+    if (suite_mem_alloc_zero == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_mem_alloc_zero, mem_alloc_zero__for_count_and_size__should_return__zeroed_memory);
+    ADD_TEST(suite_mem_alloc_zero, mem_alloc_zero__for_small_size__should_return__zeroed_byte);
+    ADD_TEST(suite_mem_alloc_zero, mem_alloc_zero_t__for_count_and_type__should_return__zeroed_array);
+    ADD_TEST(suite_mem_alloc_zero, mem_alloc_zero__with_custom_allocator__should_return__zeroed_memory);
 
-    // mem_alloc_zero tests
-    ADD_TEST(suite, mem_alloc_zero__for_count_and_size__should_return__zeroed_memory);
-    ADD_TEST(suite, mem_alloc_zero__for_small_size__should_return__zeroed_byte);
+    // mem_realloc() suite
+    CU_pSuite suite_mem_realloc = CU_add_suite("mem_realloc()", nullptr, nullptr);
+    if (suite_mem_realloc == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_mem_realloc, mem_realloc__for_larger_size__should_return__grown_allocation);
+    ADD_TEST(suite_mem_realloc, mem_realloc__for_smaller_size__should_return__shrunk_allocation);
+    ADD_TEST(suite_mem_realloc, mem_realloc_t__for_larger_count__should_return__grown_typed_array);
+    ADD_TEST(suite_mem_realloc, mem_realloc__with_custom_allocator__should__call_custom_reallocator);
 
-    // Typed allocation tests
-    ADD_TEST(suite, mem_alloc_t__for_type__should_return__typed_pointer);
-    ADD_TEST(suite, mem_alloc_zero_t__for_count_and_type__should_return__zeroed_array);
+    // alloc_push() / alloc_pop() suite
+    CU_pSuite suite_alloc_push_pop = CU_add_suite("alloc_push() / alloc_pop()", nullptr, nullptr);
+    if (suite_alloc_push_pop == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_alloc_push_pop, alloc_push__should_add_allocator_to_stack);
+    ADD_TEST(suite_alloc_push_pop, alloc_push__with_nested_allocators__should_use_topmost);
 
-    // mem_realloc tests
-    ADD_TEST(suite, mem_realloc__for_larger_size__should_return__grown_allocation);
-    ADD_TEST(suite, mem_realloc__for_smaller_size__should_return__shrunk_allocation);
-    ADD_TEST(suite, mem_realloc_t__for_larger_count__should_return__grown_typed_array);
+    // alloc_scope() suite
+    CU_pSuite suite_alloc_scope = CU_add_suite("alloc_scope()", nullptr, nullptr);
+    if (suite_alloc_scope == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_alloc_scope, alloc_scope__should_push_and_pop_allocator);
+    ADD_TEST(suite_alloc_scope, alloc_scope__with_allocation__should_use_scoped_allocator);
+    ADD_TEST(suite_alloc_scope, alloc_scope__with_nested_scopes__should_respect_nesting);
+    ADD_TEST(suite_alloc_scope, alloc_scope__with_break__should_still_pop_allocator);
 
-    // TLS allocator stack tests
-    ADD_TEST(suite, alloc_push__should_add_allocator_to_stack);
-    ADD_TEST(suite, alloc_push__with_nested_allocators__should_use_topmost);
-    ADD_TEST(suite, alloc_scope__should_push_and_pop_allocator);
-    ADD_TEST(suite, alloc_scope__with_allocation__should_use_scoped_allocator);
-    ADD_TEST(suite, alloc_scope__with_nested_scopes__should_respect_nesting);
-    ADD_TEST(suite, alloc_scope__with_break__should_still_pop_allocator);
-
-    // Custom allocator tests
-    ADD_TEST(suite, mem_alloc__with_custom_allocator__should__call_custom_allocator);
-    ADD_TEST(suite, mem_realloc__with_custom_allocator__should__call_custom_reallocator);
-    ADD_TEST(suite, mem_alloc_zero__with_custom_allocator__should_return__zeroed_memory);
-    ADD_TEST(suite, mem_alloc__with_custom_allocator__should__track_multiple_allocations);
-
-    // Stress tests
-    ADD_TEST(suite, mem_alloc__for_100_cycles__should__succeed);
-    ADD_TEST(suite, mem_alloc__for_1mb__should_return__nonnull);
-    ADD_TEST(suite, mem_alloc__with_many_scope_entries__should__succeed);
+    // Stress tests suite
+    CU_pSuite suite_stress = CU_add_suite("Stress tests", nullptr, nullptr);
+    if (suite_stress == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_stress, mem_alloc__for_100_cycles__should__succeed);
+    ADD_TEST(suite_stress, mem_alloc__for_1mb__should_return__nonnull);
+    ADD_TEST(suite_stress, mem_alloc__with_many_scope_entries__should__succeed);
 
     CU_basic_set_mode(CU_BRM_VERBOSE);
     CU_basic_run_tests();
