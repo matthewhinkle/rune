@@ -409,7 +409,7 @@ static void hash64_macro__should_use__default_seed() {
 
     // Act
     const uint64_t h1 = hash64(data, HELLO_LEN);
-    const uint64_t h2 = murmur64(data, HELLO_LEN, R_HASH_DEFAULT_SEED);
+    const uint64_t h2 = xxhash64(data, HELLO_LEN, R_HASH_DEFAULT_SEED);
 
     // Assert
     CU_ASSERT_EQUAL(h1, h2);
@@ -650,8 +650,8 @@ static void hash__for_integers__should_return__deterministic_hash() {
     int x = 42;
 
     // Act
-    const uint64_t h1 = hash(x);
-    const uint64_t h2 = hash(x);
+    const uint64_t h1 = hash_mix(x);
+    const uint64_t h2 = hash_mix(x);
 
     // Assert
     CU_ASSERT_EQUAL(h1, h2);
@@ -659,10 +659,10 @@ static void hash__for_integers__should_return__deterministic_hash() {
 
 static void hash__for_different_integers__should_return__different_hashes() {
     // Arrange & Act
-    const uint64_t h0 = hash(0);
-    const uint64_t h1 = hash(1);
-    const uint64_t h2 = hash(2);
-    const uint64_t h42 = hash(42);
+    const uint64_t h0 = hash_mix(0);
+    const uint64_t h1 = hash_mix(1);
+    const uint64_t h2 = hash_mix(2);
+    const uint64_t h42 = hash_mix(42);
 
     // Assert
     CU_ASSERT_NOT_EQUAL(h0, h1);
@@ -672,9 +672,9 @@ static void hash__for_different_integers__should_return__different_hashes() {
 
 static void hash__for_negative_integers__should_return__valid_hash() {
     // Arrange & Act
-    const uint64_t h_neg1 = hash(-1);
-    const uint64_t h_neg2 = hash(-2);
-    const uint64_t h_pos1 = hash(1);
+    const uint64_t h_neg1 = hash_mix(-1);
+    const uint64_t h_neg2 = hash_mix(-2);
+    const uint64_t h_pos1 = hash_mix(1);
 
     // Assert - negative and positive should differ
     CU_ASSERT_NOT_EQUAL(h_neg1, h_pos1);
@@ -683,20 +683,20 @@ static void hash__for_negative_integers__should_return__valid_hash() {
 
 static void hash__for_various_int_types__should_return__valid_hashes() {
     // Arrange & Act - test various integer types via _Generic
-    const uint64_t h_char = hash((char)'A');
-    const uint64_t h_short = hash((short)42);
-    const uint64_t h_int = hash((int)42);
-    const uint64_t h_long = hash((long)42);
-    const uint64_t h_llong = hash((long long)42);
-    const uint64_t h_uint = hash((unsigned int)42);
+    const uint64_t h_char = hash_mix((char)'A');
+    const uint64_t h_short = hash_mix((short)42);
+    const uint64_t h_int = hash_mix((int)42);
+    const uint64_t h_long = hash_mix((long)42);
+    const uint64_t h_llong = hash_mix((long long)42);
+    const uint64_t h_uint = hash_mix((unsigned int)42);
 
     // Assert - all should be deterministic (test by calling again)
-    CU_ASSERT_EQUAL(h_char, hash((char)'A'));
-    CU_ASSERT_EQUAL(h_short, hash((short)42));
-    CU_ASSERT_EQUAL(h_int, hash((int)42));
-    CU_ASSERT_EQUAL(h_long, hash((long)42));
-    CU_ASSERT_EQUAL(h_llong, hash((long long)42));
-    CU_ASSERT_EQUAL(h_uint, hash((unsigned int)42));
+    CU_ASSERT_EQUAL(h_char, hash_mix((char)'A'));
+    CU_ASSERT_EQUAL(h_short, hash_mix((short)42));
+    CU_ASSERT_EQUAL(h_int, hash_mix((int)42));
+    CU_ASSERT_EQUAL(h_long, hash_mix((long)42));
+    CU_ASSERT_EQUAL(h_llong, hash_mix((long long)42));
+    CU_ASSERT_EQUAL(h_uint, hash_mix((unsigned int)42));
 }
 
 static void hash__for_floats__should_return__deterministic_hash() {
@@ -705,10 +705,10 @@ static void hash__for_floats__should_return__deterministic_hash() {
     double d = 3.14159265358979;
 
     // Act
-    const uint64_t hf1 = hash(f);
-    const uint64_t hf2 = hash(f);
-    const uint64_t hd1 = hash(d);
-    const uint64_t hd2 = hash(d);
+    const uint64_t hf1 = hash_float(f);
+    const uint64_t hf2 = hash_float(f);
+    const uint64_t hd1 = hash_double(d);
+    const uint64_t hd2 = hash_double(d);
 
     // Assert
     CU_ASSERT_EQUAL(hf1, hf2);
@@ -723,10 +723,10 @@ static void hash__for_negative_zero__should_equal__positive_zero() {
     double neg_zero_d = -0.0;
 
     // Act
-    const uint64_t h_pos_f = hash(pos_zero_f);
-    const uint64_t h_neg_f = hash(neg_zero_f);
-    const uint64_t h_pos_d = hash(pos_zero_d);
-    const uint64_t h_neg_d = hash(neg_zero_d);
+    const uint64_t h_pos_f = hash_float(pos_zero_f);
+    const uint64_t h_neg_f = hash_float(neg_zero_f);
+    const uint64_t h_pos_d = hash_double(pos_zero_d);
+    const uint64_t h_neg_d = hash_double(neg_zero_d);
 
     // Assert - -0 and +0 should hash the same (they compare equal)
     CU_ASSERT_EQUAL(h_pos_f, h_neg_f);
@@ -1176,22 +1176,6 @@ static void xxhash64__for_sequential_keys__should_produce__varied_hashes() {
 }
 
 // =====================================================================================================================
-// xxhash64 convenience macro tests
-// =====================================================================================================================
-
-static void xxhash64_default_macro__should_use__default_seed() {
-    // Arrange
-    const char * data = HELLO;
-
-    // Act
-    const uint64_t h1 = xxhash64_default(data, HELLO_LEN);
-    const uint64_t h2 = xxhash64(data, HELLO_LEN, R_HASH_DEFAULT_SEED);
-
-    // Assert
-    CU_ASSERT_EQUAL(h1, h2);
-}
-
-// =====================================================================================================================
 // xxhash64 vs murmur64 comparison
 // =====================================================================================================================
 
@@ -1387,7 +1371,6 @@ int main() {
     ADD_TEST(suite_xxhash64, xxhash64__for_single_bit_change__should_produce__different_hash);
     ADD_TEST(suite_xxhash64, xxhash64__for_last_byte_change__should_produce__different_hash);
     ADD_TEST(suite_xxhash64, xxhash64__for_sequential_keys__should_produce__varied_hashes);
-    ADD_TEST(suite_xxhash64, xxhash64_default_macro__should_use__default_seed);
     ADD_TEST(suite_xxhash64, xxhash64__should_differ_from_murmur64__for_same_input);
     ADD_TEST(suite_xxhash64, xxhash64_and_murmur64__should_be_deterministic_independently);
 
