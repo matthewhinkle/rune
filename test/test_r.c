@@ -77,36 +77,11 @@ static void R_GLUE__should__concatenate_tokens(void) {
 // Test token concatenation using R_GLUE
 #define TEST_A hello
 #define TEST_B world
-    const int R_GLUE(TEST_A, TEST_B) = 42;
+    constexpr int R_GLUE(TEST_A, TEST_B) = 42;
     CU_ASSERT_EQUAL(helloworld, 42);
     (void)helloworld; // Suppress unused warning
 #undef TEST_A
 #undef TEST_B
-}
-
-static void R_MAX__for_two_values__should_return__maximum(void) {
-    CU_ASSERT_EQUAL(R_MAX(5, 10), 10);
-    CU_ASSERT_EQUAL(R_MAX(10, 5), 10);
-    CU_ASSERT_EQUAL(R_MAX(7, 7), 7);
-    CU_ASSERT_EQUAL(R_MAX(-5, -10), -5);
-    CU_ASSERT_EQUAL(R_MAX(0, 0), 0);
-}
-
-static void R_MIN__for_two_values__should_return__minimum(void) {
-    CU_ASSERT_EQUAL(R_MIN(5, 10), 5);
-    CU_ASSERT_EQUAL(R_MIN(10, 5), 5);
-    CU_ASSERT_EQUAL(R_MIN(7, 7), 7);
-    CU_ASSERT_EQUAL(R_MIN(-5, -10), -10);
-    CU_ASSERT_EQUAL(R_MIN(0, 0), 0);
-}
-
-static void R_CLAMP__for_value_and_range__should_return__clamped_value(void) {
-    CU_ASSERT_EQUAL(R_CLAMP(5, 0, 10), 5);
-    CU_ASSERT_EQUAL(R_CLAMP(-5, 0, 10), 0);
-    CU_ASSERT_EQUAL(R_CLAMP(15, 0, 10), 10);
-    CU_ASSERT_EQUAL(R_CLAMP(0, 0, 10), 0);
-    CU_ASSERT_EQUAL(R_CLAMP(10, 0, 10), 10);
-    CU_ASSERT_EQUAL(R_CLAMP(5, 5, 5), 5);
 }
 
 // =====================================================================================================================
@@ -141,7 +116,7 @@ static void mem_alloc__for_size__should_return__writable_memory(void) {
 // =====================================================================================================================
 
 static void mem_alloc_zero__for_count_and_size__should_return__zeroed_memory(void) {
-    const size_t count = 10;
+    constexpr size_t count = 10;
     int * ptr = mem_alloc_zero(count * sizeof(int));
     CU_ASSERT_PTR_NOT_NULL(ptr);
 
@@ -185,7 +160,7 @@ static void mem_alloc_zero_t__for_count_and_type__should_return__zeroed_array(vo
         int a;
         int b;
     } Pair;
-    const size_t count = 5;
+    constexpr size_t count = 5;
     Pair * arr = mem_alloc_zero(count * sizeof(Pair));
     CU_ASSERT_PTR_NOT_NULL(arr);
 
@@ -203,8 +178,8 @@ static void mem_alloc_zero_t__for_count_and_type__should_return__zeroed_array(vo
 // =====================================================================================================================
 
 static void mem_realloc__for_larger_size__should_return__grown_allocation(void) {
-    const size_t old_size = 10;
-    const size_t new_size = 20;
+    constexpr size_t old_size = 10;
+    constexpr size_t new_size = 20;
 
     char * ptr = (char *)mem_alloc(old_size);
     CU_ASSERT_PTR_NOT_NULL(ptr);
@@ -227,8 +202,8 @@ static void mem_realloc__for_larger_size__should_return__grown_allocation(void) 
 }
 
 static void mem_realloc__for_smaller_size__should_return__shrunk_allocation(void) {
-    const size_t old_size = 20;
-    const size_t new_size = 10;
+    constexpr size_t old_size = 20;
+    constexpr size_t new_size = 10;
 
     char * ptr = (char *)mem_alloc(old_size);
     CU_ASSERT_PTR_NOT_NULL(ptr);
@@ -254,8 +229,8 @@ static void mem_realloc_t__for_larger_count__should_return__grown_typed_array(vo
     typedef struct {
         int value;
     } Item;
-    const size_t old_count = 5;
-    const size_t new_count = 10;
+    constexpr size_t old_count = 5;
+    constexpr size_t new_count = 10;
 
     Item * arr = mem_alloc_zero(old_count * sizeof(Item));
     CU_ASSERT_PTR_NOT_NULL(arr);
@@ -477,7 +452,7 @@ static void mem_alloc__for_100_cycles__should__succeed(void) {
 }
 
 static void mem_alloc__for_1mb__should_return__nonnull(void) {
-    const size_t large_size = 1024 * 1024;
+    constexpr size_t large_size = 1024 * 1024;
     void * ptr = mem_alloc(large_size);
     CU_ASSERT_PTR_NOT_NULL(ptr);
     mem_free(ptr, large_size);
@@ -499,6 +474,299 @@ static void mem_alloc__with_many_scope_entries__should__succeed(void) {
 }
 
 // =====================================================================================================================
+// Error handling tests
+// =====================================================================================================================
+
+static void err_set__should_set_error_with_location(void) {
+    err_clear();
+    CU_ASSERT_FALSE(err_has());
+
+    err_set(R_ERR_NULL_POINTER, "Test error");
+    CU_ASSERT_TRUE(err_has());
+    CU_ASSERT_EQUAL(err_code(), R_ERR_NULL_POINTER);
+    CU_ASSERT_STRING_EQUAL(err_msg(), "Test error");
+
+    err_clear();
+}
+
+static void err_set__with_null_message__should_use_default_message(void) {
+    err_clear();
+    err_set(R_ERR_OUT_OF_MEMORY, nullptr);
+    CU_ASSERT_STRING_EQUAL(err_msg(), "Out of memory");
+    err_clear();
+}
+
+static void err_set__with_empty_message__should_use_default_message(void) {
+    err_clear();
+    err_set(R_ERR_INVALID_ARGUMENT, "");
+    CU_ASSERT_STRING_EQUAL(err_msg(), "Invalid argument");
+    err_clear();
+}
+
+static void err_get__with_no_error__should_return_null(void) {
+    err_clear();
+    const r_error_ctx * ctx = err_get();
+    CU_ASSERT_PTR_NULL(ctx);
+}
+
+static void err_get__with_error__should_return_context(void) {
+    err_clear();
+    err_set(R_ERR_BUFFER_OVERFLOW, "Test overflow");
+    const r_error_ctx * ctx = err_get();
+    CU_ASSERT_PTR_NOT_NULL(ctx);
+    CU_ASSERT_EQUAL(ctx->code, R_ERR_BUFFER_OVERFLOW);
+    CU_ASSERT_STRING_EQUAL(ctx->message, "Test overflow");
+    CU_ASSERT_PTR_NOT_NULL(ctx->file);
+    CU_ASSERT_PTR_NOT_NULL(ctx->func);
+    CU_ASSERT(ctx->line > 0);
+    err_clear();
+}
+
+static void err_code__with_no_error__should_return_ok(void) {
+    err_clear();
+    CU_ASSERT_EQUAL(err_code(), R_ERR_OK);
+}
+
+static void err_msg__with_no_error__should_return_no_error(void) {
+    err_clear();
+    CU_ASSERT_STRING_EQUAL(err_msg(), "No error");
+}
+
+static void err_has__with_no_error__should_return_false(void) {
+    err_clear();
+    CU_ASSERT_FALSE(err_has());
+}
+
+static void err_has__with_error__should_return_true(void) {
+    err_clear();
+    err_set(R_ERR_NOT_FOUND, nullptr);
+    CU_ASSERT_TRUE(err_has());
+    err_clear();
+}
+
+static void err_depth__with_no_errors__should_return_zero(void) {
+    err_clear();
+    CU_ASSERT_EQUAL(err_depth(), 0);
+}
+
+static void err_depth__with_multiple_errors__should_return_count(void) {
+    err_clear();
+    err_set(R_ERR_NULL_POINTER, "Error 1");
+    CU_ASSERT_EQUAL(err_depth(), 1);
+    err_set(R_ERR_INVALID_ARGUMENT, "Error 2");
+    CU_ASSERT_EQUAL(err_depth(), 2);
+    err_set(R_ERR_OVERFLOW, "Error 3");
+    CU_ASSERT_EQUAL(err_depth(), 3);
+    err_clear();
+}
+
+static void err_at__with_valid_index__should_return_error(void) {
+    err_clear();
+    err_set(R_ERR_NULL_POINTER, "First");
+    err_set(R_ERR_INVALID_ARGUMENT, "Second");
+    err_set(R_ERR_OVERFLOW, "Third");
+
+    const r_error_ctx * err0 = err_at(0);
+    CU_ASSERT_PTR_NOT_NULL(err0);
+    CU_ASSERT_EQUAL(err0->code, R_ERR_NULL_POINTER);
+    CU_ASSERT_STRING_EQUAL(err0->message, "First");
+
+    const r_error_ctx * err1 = err_at(1);
+    CU_ASSERT_PTR_NOT_NULL(err1);
+    CU_ASSERT_EQUAL(err1->code, R_ERR_INVALID_ARGUMENT);
+
+    const r_error_ctx * err2 = err_at(2);
+    CU_ASSERT_PTR_NOT_NULL(err2);
+    CU_ASSERT_EQUAL(err2->code, R_ERR_OVERFLOW);
+
+    err_clear();
+}
+
+static void err_at__with_negative_index__should_return_null(void) {
+    err_clear();
+    err_set(R_ERR_NULL_POINTER, "Error");
+    const r_error_ctx * err = err_at(-1);
+    CU_ASSERT_PTR_NULL(err);
+    err_clear();
+}
+
+static void err_at__with_out_of_bounds_index__should_return_null(void) {
+    err_clear();
+    err_set(R_ERR_NULL_POINTER, "Error");
+    const r_error_ctx * err = err_at(10);
+    CU_ASSERT_PTR_NULL(err);
+    err_clear();
+}
+
+static void err_pop__should_remove_most_recent_error(void) {
+    err_clear();
+    err_set(R_ERR_NULL_POINTER, "First");
+    err_set(R_ERR_INVALID_ARGUMENT, "Second");
+    CU_ASSERT_EQUAL(err_depth(), 2);
+    CU_ASSERT_EQUAL(err_code(), R_ERR_INVALID_ARGUMENT);
+
+    err_pop();
+    CU_ASSERT_EQUAL(err_depth(), 1);
+    CU_ASSERT_EQUAL(err_code(), R_ERR_NULL_POINTER);
+
+    err_pop();
+    CU_ASSERT_EQUAL(err_depth(), 0);
+    CU_ASSERT_FALSE(err_has());
+}
+
+static void err_pop__with_no_errors__should_not_crash(void) {
+    err_clear();
+    err_pop(); // Should be safe
+    CU_ASSERT_EQUAL(err_depth(), 0);
+}
+
+static void err_clear__should_remove_all_errors(void) {
+    err_clear();
+    err_set(R_ERR_NULL_POINTER, "Error 1");
+    err_set(R_ERR_INVALID_ARGUMENT, "Error 2");
+    err_set(R_ERR_OVERFLOW, "Error 3");
+    CU_ASSERT_EQUAL(err_depth(), 3);
+
+    err_clear();
+    CU_ASSERT_EQUAL(err_depth(), 0);
+    CU_ASSERT_FALSE(err_has());
+}
+
+static void err_enable__should_control_error_tracking(void) {
+    err_clear();
+    CU_ASSERT_TRUE(err_is_enabled());
+
+    // Disable error tracking
+    err_enable(false);
+    CU_ASSERT_FALSE(err_is_enabled());
+
+    // Try to set error while disabled
+    err_set(R_ERR_NULL_POINTER, "Should not be set");
+    CU_ASSERT_FALSE(err_has());
+    CU_ASSERT_EQUAL(err_depth(), 0);
+
+    // Re-enable error tracking
+    err_enable(true);
+    CU_ASSERT_TRUE(err_is_enabled());
+
+    // Now errors should be set
+    err_set(R_ERR_NULL_POINTER, "Should be set");
+    CU_ASSERT_TRUE(err_has());
+    err_clear();
+}
+
+static void err_set__when_disabled__should_return_false(void) {
+    err_clear();
+    err_enable(false);
+    bool result = err_set(R_ERR_NULL_POINTER, "Test");
+    CU_ASSERT_FALSE(result);
+    err_enable(true);
+}
+
+static void err_set__when_stack_full__should_return_false(void) {
+    err_clear();
+    // Fill the error stack to maximum
+    for (int i = 0; i < R_ERROR_STACK_MAX; i++) {
+        bool result = err_set(R_ERR_NULL_POINTER, "Error");
+        CU_ASSERT_TRUE(result);
+    }
+    CU_ASSERT_EQUAL(err_depth(), R_ERROR_STACK_MAX);
+
+    // Try to add one more - should fail
+    bool result = err_set(R_ERR_OVERFLOW, "Should fail");
+    CU_ASSERT_FALSE(result);
+    CU_ASSERT_EQUAL(err_depth(), R_ERROR_STACK_MAX);
+
+    err_clear();
+}
+
+static void r_error_message__for_all_error_codes__should_return_messages(void) {
+    // Test all defined error codes
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_OK), "No error");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_ALLOC_FAILED), "Memory allocation failed");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_OUT_OF_MEMORY), "Out of memory");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_ALLOCATOR_STACK_OVERFLOW), "Allocator stack overflow");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_ALLOCATOR_STACK_UNDERFLOW), "Allocator stack underflow");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_NULL_POINTER), "Null pointer argument");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_INVALID_ARGUMENT), "Invalid argument");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_INVALID_LENGTH), "Invalid length");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_EMPTY_INPUT), "Empty input");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_OVERFLOW), "Numeric overflow");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_BUFFER_OVERFLOW), "Buffer overflow");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_LENGTH_EXCEEDED), "Maximum length exceeded");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_CAPACITY_EXCEEDED), "Capacity exceeded");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_NOT_FOUND), "Item not found");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_PATTERN_NOT_FOUND), "Pattern not found in string");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_INDEX_OUT_OF_BOUNDS), "Index out of bounds");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_QUEUE_FULL), "Queue is full");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_QUEUE_EMPTY), "Queue is empty");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_LIST_EMPTY), "List is empty");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_FORMAT_FAILED), "Format operation failed");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_PARSE_FAILED), "Parse operation failed");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_STRING_TOO_LONG), "String exceeds maximum length");
+    CU_ASSERT_STRING_EQUAL(r_error_message(R_ERR_INVALID_UTF8), "Invalid UTF-8 sequence");
+}
+
+static void r_error_message__for_unknown_code__should_return_unknown(void) {
+    CU_ASSERT_STRING_EQUAL(r_error_message((r_error_code)9999), "Unknown error");
+}
+
+static void err_print__with_no_error__should_print_no_error(void) {
+    err_clear();
+    // Print to /dev/null to avoid test output pollution
+    FILE * null_stream = fopen("/dev/null", "w");
+    if (null_stream) {
+        err_print(null_stream);
+        fclose(null_stream);
+    }
+    CU_ASSERT_TRUE(true); // If we got here, it didn't crash
+}
+
+static void err_print__with_error__should_not_crash(void) {
+    err_clear();
+    err_set(R_ERR_NULL_POINTER, "Test error");
+    // Print to /dev/null to avoid test output pollution
+    FILE * null_stream = fopen("/dev/null", "w");
+    if (null_stream) {
+        err_print(null_stream);
+        fclose(null_stream);
+    }
+    CU_ASSERT_TRUE(true); // If we got here, it didn't crash
+    err_clear();
+}
+
+static void err_print_stack__with_no_errors__should_not_crash(void) {
+    err_clear();
+    // Print to /dev/null to avoid test output pollution
+    FILE * null_stream = fopen("/dev/null", "w");
+    if (null_stream) {
+        err_print_stack(null_stream);
+        fclose(null_stream);
+    }
+    CU_ASSERT_TRUE(true);
+}
+
+static void err_print_stack__with_multiple_errors__should_not_crash(void) {
+    err_clear();
+    err_set(R_ERR_NULL_POINTER, "Error 1");
+    err_set(R_ERR_INVALID_ARGUMENT, "Error 2");
+    err_set(R_ERR_OVERFLOW, "Error 3");
+    // Print to /dev/null to avoid test output pollution
+    FILE * null_stream = fopen("/dev/null", "w");
+    if (null_stream) {
+        err_print_stack(null_stream);
+        fclose(null_stream);
+    }
+    CU_ASSERT_TRUE(true);
+    err_clear();
+}
+
+static void mem_free__with_null_pointer__should_not_crash(void) {
+    mem_free(nullptr, 100);
+    CU_ASSERT_TRUE(true); // If we got here, it didn't crash
+}
+
+// =====================================================================================================================
 // Test suite registration
 // =====================================================================================================================
 
@@ -514,9 +782,6 @@ int main(void) {
         return CU_get_error();
     }
     ADD_TEST(suite_macros, R_GLUE__should__concatenate_tokens);
-    ADD_TEST(suite_macros, R_MAX__for_two_values__should_return__maximum);
-    ADD_TEST(suite_macros, R_MIN__for_two_values__should_return__minimum);
-    ADD_TEST(suite_macros, R_CLAMP__for_value_and_range__should_return__clamped_value);
 
     // mem_alloc() suite
     CU_pSuite suite_mem_alloc = CU_add_suite("mem_alloc()", nullptr, nullptr);
@@ -581,6 +846,40 @@ int main(void) {
     ADD_TEST(suite_stress, mem_alloc__for_100_cycles__should__succeed);
     ADD_TEST(suite_stress, mem_alloc__for_1mb__should_return__nonnull);
     ADD_TEST(suite_stress, mem_alloc__with_many_scope_entries__should__succeed);
+
+    // Error handling suite
+    CU_pSuite suite_error = CU_add_suite("Error handling", nullptr, nullptr);
+    if (suite_error == nullptr) {
+        CU_cleanup_registry();
+        return CU_get_error();
+    }
+    ADD_TEST(suite_error, err_set__should_set_error_with_location);
+    ADD_TEST(suite_error, err_set__with_null_message__should_use_default_message);
+    ADD_TEST(suite_error, err_set__with_empty_message__should_use_default_message);
+    ADD_TEST(suite_error, err_set__when_disabled__should_return_false);
+    ADD_TEST(suite_error, err_set__when_stack_full__should_return_false);
+    ADD_TEST(suite_error, err_get__with_no_error__should_return_null);
+    ADD_TEST(suite_error, err_get__with_error__should_return_context);
+    ADD_TEST(suite_error, err_code__with_no_error__should_return_ok);
+    ADD_TEST(suite_error, err_msg__with_no_error__should_return_no_error);
+    ADD_TEST(suite_error, err_has__with_no_error__should_return_false);
+    ADD_TEST(suite_error, err_has__with_error__should_return_true);
+    ADD_TEST(suite_error, err_depth__with_no_errors__should_return_zero);
+    ADD_TEST(suite_error, err_depth__with_multiple_errors__should_return_count);
+    ADD_TEST(suite_error, err_at__with_valid_index__should_return_error);
+    ADD_TEST(suite_error, err_at__with_negative_index__should_return_null);
+    ADD_TEST(suite_error, err_at__with_out_of_bounds_index__should_return_null);
+    ADD_TEST(suite_error, err_pop__should_remove_most_recent_error);
+    ADD_TEST(suite_error, err_pop__with_no_errors__should_not_crash);
+    ADD_TEST(suite_error, err_clear__should_remove_all_errors);
+    ADD_TEST(suite_error, err_enable__should_control_error_tracking);
+    ADD_TEST(suite_error, r_error_message__for_all_error_codes__should_return_messages);
+    ADD_TEST(suite_error, r_error_message__for_unknown_code__should_return_unknown);
+    ADD_TEST(suite_error, err_print__with_no_error__should_print_no_error);
+    ADD_TEST(suite_error, err_print__with_error__should_not_crash);
+    ADD_TEST(suite_error, err_print_stack__with_no_errors__should_not_crash);
+    ADD_TEST(suite_error, err_print_stack__with_multiple_errors__should_not_crash);
+    ADD_TEST(suite_error, mem_free__with_null_pointer__should_not_crash);
 
     CU_basic_set_mode(CU_BRM_VERBOSE);
     CU_basic_run_tests();

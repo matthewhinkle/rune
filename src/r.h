@@ -75,12 +75,6 @@
 #define R_VA_ARGS(...) __VA_OPT__(, ) __VA_ARGS__
 #define R_(name) R_JOIN(r, name, __)
 
-// ------------------------------------------------- Numeric utilities -------------------------------------------------
-
-#define R_MAX(a, b) ((a) > (b) ? (a) : (b))
-#define R_MIN(a, b) ((a) < (b) ? (a) : (b))
-#define R_CLAMP(val, min, max) ((val) < (min) ? (min) : ((val) > (max) ? (max) : (val)))
-
 // --------------------------------------------------- Type adapters ---------------------------------------------------
 
 #if defined(__clang__) || defined(__GNUC__)
@@ -261,6 +255,7 @@ extern r_error_code R_(err_code)(void);
 extern const char * R_(err_msg)(void);
 extern bool R_(err_has)(void);
 extern int R_(err_depth)(void);
+extern const r_error_ctx * R_(err_at)(int index);
 
 // ----------------------------------------------- Error API: Management -----------------------------------------------
 
