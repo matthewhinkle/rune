@@ -17,11 +17,6 @@ jobs:
       contents: read
       security-events: write
 
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'cpp' ]
-
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -29,15 +24,18 @@ jobs:
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
       with:
-        languages: ${{ matrix.language }}
+        languages: 'c'
 
     - name: Install dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y cmake ninja-build
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v2
+    - name: Configure CMake
+      run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+    - name: Build
+      run: cmake --build build
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
