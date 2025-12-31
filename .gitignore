@@ -43,6 +43,3 @@ Thumbs.db
 # Env
 .venv/
 .claude/
-
-# wip modules
-map.h
