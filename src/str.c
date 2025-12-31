@@ -18,15 +18,15 @@ static uint64_t fnv1a_start(void) {
     return 0xCBF29CE484222325ULL;
 }
 
-static uint64_t fnv1a_next(uint64_t hash, uint8_t byte) {
+static uint64_t fnv1a_next(const uint64_t hash, const uint8_t byte) {
     return (hash ^ byte) * 0x100000001B3ULL;
 }
 
-static uint64_t fnv1a_mix(uint64_t h1, uint64_t h2) {
+static uint64_t fnv1a_mix(const uint64_t h1, const uint64_t h2) {
     return (h1 ^ h2) * 0x100000001B3ULL;
 }
 
-static uint64_t fnv1a_hash(const char * data, size_t max_len) {
+static uint64_t fnv1a_hash(const char * data, const size_t max_len) {
     uint64_t hash = fnv1a_start();
     for (size_t i = 0; i < max_len && data[i] != NULLTERM; i++) {
         hash = fnv1a_next(hash, (uint8_t)data[i]);
@@ -67,7 +67,7 @@ static rstr * rstr_from(const char * data) {
 }
 
 // Allocate new rstr with given length
-static rstr * rstr_alloc(size_t len) {
+static rstr * rstr_alloc(const size_t len) {
     const size_t total = sizeof(rstr) + len + 2; // +1 for null, +1 for ETX
     rstr * r = mem_alloc(total);
     r->soh = SOH;
@@ -81,7 +81,7 @@ static rstr * rstr_alloc(size_t len) {
 }
 
 // Create rstr from data, computing hash
-static rstr * rstr_new(const char * data, size_t max_len) {
+static rstr * rstr_new(const char * data, const size_t max_len) {
     if (data == nullptr)
         return nullptr;
 
@@ -100,13 +100,13 @@ static rstr * rstr_new(const char * data, size_t max_len) {
 }
 
 // Get length, using cached value for managed strings
-static size_t rstr_len(const char * s, size_t max_len) {
+static size_t rstr_len(const char * s, const size_t max_len) {
     const rstr * r = rstr_from(s);
     return r ? r->len : strnlen(s, max_len);
 }
 
 // Get hash, using cached value for managed strings
-static uint64_t rstr_hash(const char * s, size_t max_len) {
+static uint64_t rstr_hash(const char * s, const size_t max_len) {
     if (s == nullptr)
         return 0;
     const rstr * r = rstr_from(s);
@@ -117,7 +117,7 @@ static uint64_t rstr_hash(const char * s, size_t max_len) {
 // Internal: KMP string search
 // =====================================================================================================================
 
-static void kmp_lps(const char * pat, size_t len, int * lps) {
+static void kmp_lps(const char * pat, const size_t len, int * lps) {
     int k = 0;
     lps[0] = 0;
     for (size_t i = 1; i < len;) {
@@ -132,7 +132,7 @@ static void kmp_lps(const char * pat, size_t len, int * lps) {
 }
 
 static const char *
-kmp_find(const char * text, size_t text_len, const char * pat, size_t pat_len, bool reverse, int * lps) {
+kmp_find(const char * text, const size_t text_len, const char * pat, const size_t pat_len, const bool reverse, int * lps) {
     kmp_lps(pat, pat_len, lps);
 
     size_t i = 0, j = 0;
@@ -508,7 +508,7 @@ extern char * R_(str_join)(const char * delim, const char ** arr, const str_opt 
     return result->data;
 }
 
-extern char * R_(str_repeat)(const char * s, size_t n, const str_opt * opt) {
+extern char * R_(str_repeat)(const char * s, const size_t n, const str_opt * opt) {
     if (opt == nullptr)
         opt = &R_STR_OPTS_DEFAULT;
     if (err_null(s) || err_check(n > 0, R_ERR_INVALID_ARGUMENT))
