@@ -3,10 +3,11 @@
 A C23 library experimenting with foundational primitives found in higher-level languages.
 
 [![Build Status](https://github.com/matthewhinkle/rune/actions/workflows/coverage.yml/badge.svg)](https://github.com/matthewhinkle/rune/actions/workflows/coverage.yml)
-[![codecov](https://codecov.io/gh/matthewhinkle/rune/branch/master/graph/badge.svg)](https://codecov.io/gh/matthewhinkle/rune)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Language: C23](https://img.shields.io/badge/Language-C23-blue)](https://en.cppreference.com/w/c/23)
 [![Platforms: Linux | macOS | Windows](https://img.shields.io/badge/Platforms-Linux%20%7C%20macOS%20%7C%20Windows-success)](https://github.com/matthewhinkle/rune/actions/workflows/coverage.yml)
+[![codecov](https://codecov.io/gh/matthewhinkle/rune/branch/master/graph/badge.svg)](https://codecov.io/gh/matthewhinkle/rune)
+[![CodeQL](https://github.com/matthewhinkle/rune/actions/workflows/codeql.yml/badge.svg)](https://github.com/matthewhinkle/rune/actions/workflows/codeql.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Features
 
@@ -21,13 +22,17 @@ A C23 library experimenting with foundational primitives found in higher-level l
 ```c
 #include "str.h"
 
-char *s = str("Hello");
-char *msg = str_cat(s, ", ", "world!");  // Concatenate multiple strings
-printf("%s\n", msg);                     // "Hello, world!"
+char * s = str("Hello");
+char * msg = str_cat(
+    s,
+    ", ",
+    "world!"
+);  // Concatenate multiple strings
+printf("%s\n", msg);  // "Hello, world!"
 
-char **parts = str_split("a,b,c", ",");  // Split into array
-char *joined = str_join("-", parts);     // Join with delimiter
-printf("%s\n", joined);                  // "a-b-c"
+char ** parts = str_split("a,b,c", ",");  // Split into array
+char * joined = str_join("-", parts);     // Join with delimiter
+printf("%s\n", joined);                   // "a-b-c"
 
 str_free(s);
 str_free(msg);
@@ -49,7 +54,11 @@ list_insert(&nums, 0, 0);  // Insert at beginning
 printf("Size: %zu\n", nums.size);  // 7
 
 // Works with custom types too
-typedef struct { const char *name; int age; } Person;
+typedef struct {
+    const char * name;
+    int age;
+} Person;
+
 #define T Person
 #include "coll.h"
 #undef T
@@ -57,7 +66,11 @@ typedef struct { const char *name; int age; } Person;
 LIST(Person) people = list(Person);
 list_add(&people, (Person){"Alice", 30});
 list_add(&people, (Person){"Bob", 25});
-printf("%s is %d\n", people.data[0].name, people.data[0].age);  // Alice is 30
+printf(
+    "%s is %d\n",
+    people.data[0].name,
+    people.data[0].age
+);  // Alice is 30
 
 list_free(&nums);
 list_free(&people);
@@ -71,38 +84,48 @@ list_free(&people);
 
 // Arena allocator context
 typedef struct {
-    void *buffer;
+    void * buffer;
     size_t capacity;
     size_t used;
 } arena_ctx;
 
-static void * arena_alloc(void *ctx, size_t size) {
-    arena_ctx *a = (arena_ctx *)ctx;
+static void * arena_alloc(void * ctx, size_t size) {
+    arena_ctx * a = (arena_ctx *)ctx;
     if (a->used + size > a->capacity) {
-        return nullptr;  // Out of memory
+        return NULL;  // Out of memory
     }
-    void *ptr = (char *)a->buffer + a->used;
+    void * ptr = (char *)a->buffer + a->used;
     a->used += size;
     return ptr;
 }
 
-static void * arena_realloc(void *ctx, void *ptr, size_t old_size, size_t new_size) {
-    arena_ctx *a = (arena_ctx *)ctx;
-    if (new_size <= old_size) return ptr;
-    void *new_ptr = arena_alloc(ctx, new_size);
-    if (new_ptr) memcpy(new_ptr, ptr, old_size);
+static void * arena_realloc(void * ctx, void * ptr, size_t old_size, size_t new_size) {
+    arena_ctx * a = (arena_ctx *)ctx;
+    if (new_size <= old_size) {
+        return ptr;
+    }
+    void * new_ptr = arena_alloc(ctx, new_size);
+    if (new_ptr) {
+        memcpy(new_ptr, ptr, old_size);
+    }
     return new_ptr;
 }
 
-static void arena_free(void *ctx, void *ptr, size_t size) {
+static void arena_free(void * ctx, void * ptr, size_t size) {
     // No-op: arena frees all at once
-    (void)ctx; (void)ptr; (void)size;
+    (void)ctx;
+    (void)ptr;
+    (void)size;
 }
 
 // Usage
 int main(void) {
     char buffer[10240];
-    arena_ctx ctx = {.buffer = buffer, .capacity = sizeof(buffer), .used = 0};
+    arena_ctx ctx = {
+        .buffer = buffer,
+        .capacity = sizeof(buffer),
+        .used = 0,
+    };
     allocator arena = {
         .alloc = arena_alloc,
         .realloc = arena_realloc,
@@ -112,7 +135,7 @@ int main(void) {
 
     alloc_scope(arena) {
         // All allocations use the arena
-        char *s = str("From arena");
+        char * s = str("From arena");
 
         #define T int
         #include "coll.h"
