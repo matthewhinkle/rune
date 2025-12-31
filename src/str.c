@@ -10,12 +10,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef _WIN32
-    typedef int64_t ssize_t;
-#else
-    #include <sys/types.h>
-#endif
-
 // =====================================================================================================================
 // Internal: FNV-1a hashing
 // =====================================================================================================================
@@ -142,7 +136,7 @@ kmp_find(const char * text, size_t text_len, const char * pat, size_t pat_len, b
     kmp_lps(pat, pat_len, lps);
 
     size_t i = 0, j = 0;
-    ssize_t last = -1;
+    ptrdiff_t last = -1;
 
     while (i < text_len) {
         if (text[i] == pat[j]) {
@@ -151,7 +145,7 @@ kmp_find(const char * text, size_t text_len, const char * pat, size_t pat_len, b
         }
         if (j == pat_len) {
             if (reverse) {
-                last = (ssize_t)(i - j);
+                last = (ptrdiff_t)(i - j);
                 j = (size_t)lps[j - 1];
             } else {
                 return text + (i - j);

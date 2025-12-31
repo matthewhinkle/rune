@@ -37,7 +37,7 @@ static void test_str_with_max_len() {
     CU_ASSERT_FALSE(err_has());
     CU_ASSERT_TRUE(str_is(s2));
     CU_ASSERT_EQUAL(str_len(s2), 10);
-    CU_ASSERT_EQUAL(strncmp(s2, "Hello W/Users/matt/CLionProjects/rune/test/test_str.corl", 10), 0);
+    CU_ASSERT_EQUAL(strncmp(s2, "Hello Worl", 10), 0);
     str_free(s2);
 }
 
