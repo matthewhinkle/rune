@@ -318,6 +318,7 @@ int main(int argc, char * argv[]) {
         char status_msg[max_line_length];
         snprintf(status_msg, sizeof(status_msg), "Processing headers in file %s\n", argv[i]);
         printf("%s", status_msg);
+        // codeql [cpp/path-injection] - This is a command-line tool designed to process user-specified files
         int result = process_file(argv[i], use_color);
         if (result == 2) {
             snprintf(status_msg, sizeof(status_msg), "Reformatted %s\n", argv[i]);

@@ -23,7 +23,7 @@ static inline FILE * open_null_stream(void) {
 #ifdef _WIN32
     return fopen("NUL", "w");
 #else
-    return fopen("/dev/null", "w");
+    return fopen("/dev/null", "w");  // codeql [cpp/world-writable-file-creation] - /dev/null is a system device, not a created file
 #endif
 }
 
