@@ -64,30 +64,30 @@
 #define RUNE_BST_API
 
 /* R_BST_CMP with optional comparator - selects implementation based on arg count */
-#define _R_BST_CMP_DEFAULT(a, b) (((a) > (b)) - ((a) < (b)))
-#define _R_BST_CMP_CUSTOM(a, b, cmp) ((cmp)((a), (b)))
-#define _R_BST_CMP_SELECT(_1, _2, _3, N, ...) N
-#define R_BST_CMP(...) _R_BST_CMP_SELECT(__VA_ARGS__, _R_BST_CMP_CUSTOM, _R_BST_CMP_DEFAULT)(__VA_ARGS__)
+#define R_BST_CMP_DEFAULT(a, b) (((a) > (b)) - ((a) < (b)))
+#define R_BST_CMP_CUSTOM(a, b, cmp) ((cmp)((a), (b)))
+#define R_BST_CMP_SELECT(_1, _2, _3, N, ...) N
+#define R_BST_CMP(...) R_BST_CMP_SELECT(__VA_ARGS__, R_BST_CMP_CUSTOM, R_BST_CMP_DEFAULT)(__VA_ARGS__)
 
-#define R_BST_ISLEFT(node) (node)->parent != nullptr && (node)->parent->left == (node)
+#define R_BST_LEFT(node) (node)->parent != nullptr && (node)->parent->left == (node)
 
 #define bst_min(node)                                                                                                  \
     ({                                                                                                                 \
-        typeof_unqual((node)) cur = (node);                                                                            \
-        while (cur != nullptr && cur->left != nullptr) {                                                               \
-            cur = cur->left;                                                                                           \
+        typeof_unqual((node)) R_UNIQUE(_min_cur) = (node);                                                             \
+        while (R_UNIQUE(_min_cur) != nullptr && R_UNIQUE(_min_cur)->left != nullptr) {                                 \
+            R_UNIQUE(_min_cur) = R_UNIQUE(_min_cur)->left;                                                             \
         }                                                                                                              \
-        /* return */ cur;                                                                                              \
+        /* return */ R_UNIQUE(_min_cur);                                                                               \
     })
 
 #define bst_find(t, val, ...)                                                                                          \
     ({                                                                                                                 \
-        typeof_unqual((t)->root) search_cur = (t)->root;                                                               \
-        while (search_cur != nullptr && R_BST_CMP((val), search_cur->data __VA_OPT__(, ) __VA_ARGS__) != 0) {          \
-            search_cur = R_BST_CMP((val), search_cur->data __VA_OPT__(, ) __VA_ARGS__) < 0 ? search_cur->left          \
-                                                                                           : search_cur->right;        \
+        typeof_unqual((t)->root) R_UNIQUE(_cur) = (t)->root;                                                           \
+        while (R_UNIQUE(_cur) != nullptr && R_BST_CMP((val), R_UNIQUE(_cur)->data __VA_OPT__(, ) __VA_ARGS__) != 0) {  \
+            R_UNIQUE(_cur) = R_BST_CMP((val), R_UNIQUE(_cur)->data __VA_OPT__(, ) __VA_ARGS__) < 0 ? R_UNIQUE(_cur)->left \
+                                                                                                     : R_UNIQUE(_cur)->right; \
         }                                                                                                              \
-        /* return */ search_cur;                                                                                       \
+        /* return */ R_UNIQUE(_cur);                                                                                   \
     })
 
 /**
@@ -99,7 +99,7 @@
             (child)->parent = (node)->parent;                                                                          \
         }                                                                                                              \
         if ((node)->parent != nullptr) {                                                                               \
-            if (R_BST_ISLEFT((node))) {                                                                                \
+            if (R_BST_LEFT((node))) {                                                                                  \
                 (node)->parent->left = (child);                                                                        \
             } else {                                                                                                   \
                 (node)->parent->right = (child);                                                                       \
@@ -118,17 +118,17 @@
     ({                                                                                                                 \
         /* If successor is not the direct right child, disconnect it from old position */                              \
         if ((successor)->parent != (node)) {                                                                           \
-            typeof_unqual((successor)) successor_right = (successor)->right;                                           \
-            typeof_unqual((successor)) successor_parent = (successor)->parent;                                         \
+            typeof_unqual((successor)) R_UNIQUE(_suc_right) = (successor)->right;                                      \
+            typeof_unqual((successor)) R_UNIQUE(_suc_parent) = (successor)->parent;                                    \
             /* Replace successor with its right child in its old parent's tree */                                      \
-            if (successor_parent->left == (successor)) {                                                               \
-                successor_parent->left = successor_right;                                                              \
+            if (R_UNIQUE(_suc_parent)->left == (successor)) {                                                          \
+                R_UNIQUE(_suc_parent)->left = R_UNIQUE(_suc_right);                                                    \
             } else {                                                                                                   \
-                successor_parent->right = successor_right;                                                             \
+                R_UNIQUE(_suc_parent)->right = R_UNIQUE(_suc_right);                                                   \
             }                                                                                                          \
             /* Update right child's parent if it exists */                                                             \
-            if (successor_right != nullptr) {                                                                          \
-                successor_right->parent = successor_parent;                                                            \
+            if (R_UNIQUE(_suc_right) != nullptr) {                                                                     \
+                R_UNIQUE(_suc_right)->parent = R_UNIQUE(_suc_parent);                                                  \
             }                                                                                                          \
             /* Attach node's right subtree to successor */                                                             \
             (successor)->right = (node)->right;                                                                        \
@@ -148,7 +148,7 @@
         /* Replace node with successor in the tree */                                                                  \
         (successor)->parent = (node)->parent;                                                                          \
         if ((node)->parent != nullptr) {                                                                               \
-            if (R_BST_ISLEFT((node))) {                                                                                \
+            if (R_BST_LEFT((node))) {                                                                                  \
                 (node)->parent->left = (successor);                                                                    \
             } else {                                                                                                   \
                 (node)->parent->right = (successor);                                                                   \
@@ -170,7 +170,7 @@
             R_BST_REPLACE((t), (node), (node)->left);                                                                  \
         } else {                                                                                                       \
             /* node has left and right children */                                                                     \
-            typeof_unqual((node)->right) min_right = bst_min((node)->right);                                                                   \
+            typeof_unqual((node)->right) min_right = bst_min((node)->right);                                           \
             R_BST_SUCCEED((t), (node), min_right);                                                                     \
             suc = min_right;                                                                                           \
         }                                                                                                              \
@@ -205,23 +205,23 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
 
 #define R_RBT_PARENT(t, val, out_dir, ...)                                                                             \
     ({                                                                                                                 \
-        typeof_unqual((t)->root) search_parent = nullptr;                                                              \
-        typeof_unqual((t)->root) search_cur = (t)->root;                                                               \
-        int cmp_result = 0;                                                                                            \
-        while (search_cur != nullptr &&                                                                                \
-               (cmp_result = R_BST_CMP((val), search_cur->data __VA_OPT__(, ) __VA_ARGS__)) != 0) {                    \
-            search_parent = search_cur;                                                                                \
-            search_cur = cmp_result < 0 ? search_cur->left : search_cur->right;                                        \
+        typeof_unqual((t)->root) R_UNIQUE(_parent_parent) = nullptr;                                                   \
+        typeof_unqual((t)->root) R_UNIQUE(_parent_cur) = (t)->root;                                                    \
+        int R_UNIQUE(_parent_cmp) = 0;                                                                                \
+        while (R_UNIQUE(_parent_cur) != nullptr &&                                                                     \
+               (R_UNIQUE(_parent_cmp) = R_BST_CMP((val), R_UNIQUE(_parent_cur)->data __VA_OPT__(, ) __VA_ARGS__)) != 0) { \
+            R_UNIQUE(_parent_parent) = R_UNIQUE(_parent_cur);                                                          \
+            R_UNIQUE(_parent_cur) = R_UNIQUE(_parent_cmp) < 0 ? R_UNIQUE(_parent_cur)->left : R_UNIQUE(_parent_cur)->right; \
         }                                                                                                              \
         if ((out_dir) != nullptr) {                                                                                    \
-            if (search_cur == nullptr) {                                                                               \
-                *(out_dir) = cmp_result < 0 ? R_(rbt_left) : R_(rbt_right);                                            \
+            if (R_UNIQUE(_parent_cur) == nullptr) {                                                                    \
+                *(out_dir) = R_UNIQUE(_parent_cmp) < 0 ? R_(rbt_left) : R_(rbt_right);                                 \
             } else {                                                                                                   \
                 *(out_dir) = R_(rbt_exists);                                                                           \
             }                                                                                                          \
         }                                                                                                              \
                                                                                                                        \
-        /* return */ search_parent;                                                                                    \
+        /* return */ R_UNIQUE(_parent_parent);                                                                         \
     })
 
 /**
@@ -252,38 +252,38 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
  */
 #define R_RBT_ROTATE(t, node, dir)                                                                                     \
     ({                                                                                                                 \
-        typeof_unqual((node)->parent) node_parent = (node)->parent;                                                    \
-        if (node_parent != nullptr) {                                                                                  \
+        typeof_unqual((node)->parent) R_UNIQUE(_node_parent) = (node)->parent;                                         \
+        if (R_UNIQUE(_node_parent) != nullptr) {                                                                       \
             /* cannot rotate root */                                                                                   \
                                                                                                                        \
             /* update the parent pointers */                                                                           \
-            const typeof_unqual(node_parent->parent) rotate_gparent = node_parent->parent;                                                           \
-            if (rotate_gparent == nullptr) {                                                                           \
+            const typeof_unqual(R_UNIQUE(_node_parent)->parent) R_UNIQUE(_gparent) = R_UNIQUE(_node_parent)->parent;   \
+            if (R_UNIQUE(_gparent) == nullptr) {                                                                       \
                 /* parent is root */                                                                                   \
                 t->root = (node);                                                                                      \
-            } else if (R_BST_ISLEFT(node_parent)) {                                                                    \
-                rotate_gparent->left = (node);                                                                         \
+            } else if (R_BST_LEFT(R_UNIQUE(_node_parent))) {                                                            \
+                R_UNIQUE(_gparent)->left = (node);                                                                     \
             } else {                                                                                                   \
-                rotate_gparent->right = (node);                                                                        \
+                R_UNIQUE(_gparent)->right = (node);                                                                    \
             }                                                                                                          \
-            (node)->parent = node_parent->parent;                                                                      \
+            (node)->parent = R_UNIQUE(_node_parent)->parent;                                                           \
                                                                                                                        \
             /* node make node's former parent its right child */                                                       \
-            typeof_unqual((t)->root) prev = nullptr;                                                                   \
+            typeof_unqual((t)->root) R_UNIQUE(_prev) = nullptr;                                                        \
             if (dir == R_(rbt_left)) {                                                                                 \
-                prev = (node)->left;                                                                                   \
-                (node)->left = node_parent;                                                                            \
-                node_parent->parent = (node);                                                                          \
-                node_parent->right = prev;                                                                             \
+                R_UNIQUE(_prev) = (node)->left;                                                                        \
+                (node)->left = R_UNIQUE(_node_parent);                                                                 \
+                R_UNIQUE(_node_parent)->parent = (node);                                                               \
+                R_UNIQUE(_node_parent)->right = R_UNIQUE(_prev);                                                       \
             } else {                                                                                                   \
-                prev = node->right;                                                                                    \
-                node->right = node_parent;                                                                             \
-                node_parent->parent = node;                                                                            \
-                node_parent->left = prev;                                                                              \
+                R_UNIQUE(_prev) = node->right;                                                                         \
+                node->right = R_UNIQUE(_node_parent);                                                                  \
+                R_UNIQUE(_node_parent)->parent = node;                                                                 \
+                R_UNIQUE(_node_parent)->left = R_UNIQUE(_prev);                                                        \
             }                                                                                                          \
                                                                                                                        \
-            if (prev != nullptr) {                                                                                     \
-                prev->parent = node_parent;                                                                            \
+            if (R_UNIQUE(_prev) != nullptr) {                                                                          \
+                R_UNIQUE(_prev)->parent = R_UNIQUE(_node_parent);                                                      \
             }                                                                                                          \
         }                                                                                                              \
     })
@@ -293,8 +293,8 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
  * Assumes parent is not null. Treats null siblings as black.
  */
 #define R_RBT_SIB_COLOR(node)                                                                                          \
-    (R_BST_ISLEFT((node)) ? ((node)->parent->right != nullptr ? (node)->parent->right->color : R_(rbt_black))          \
-                          : ((node)->parent->left != nullptr ? (node)->parent->left->color : R_(rbt_black)))
+    (R_BST_LEFT((node)) ? ((node)->parent->right != nullptr ? (node)->parent->right->color : R_(rbt_black))            \
+                        : ((node)->parent->left != nullptr ? (node)->parent->left->color : R_(rbt_black)))
 
 /* rbt_contains: optional comparator */
 #define rbt_contains(t, val, ...) (((t) != nullptr) && (bst_find((t), (val), __VA_ARGS__) != nullptr))
@@ -304,7 +304,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
         if ((t) != nullptr) {                                                                                          \
             /* 1 - find the parent and direction */                                                                    \
             enum rbt_dir dir = R_(rbt_exists);                                                                         \
-            typeof_unqual((t)->root) parent = R_RBT_PARENT((t), (val), &dir __VA_OPT__(, ) __VA_ARGS__);                                   \
+            typeof_unqual((t)->root) parent = R_RBT_PARENT((t), (val), &dir __VA_OPT__(, ) __VA_ARGS__);               \
                                                                                                                        \
             /* 2 - check if the node already exists */                                                                 \
             if (dir != R_(rbt_exists)) {                                                                               \
@@ -328,18 +328,18 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
                     }                                                                                                  \
                                                                                                                        \
                     /* 6 - handle red parent violations */                                                             \
-                    typeof_unqual((t)->root) cur = new_node;                                                            \
+                    typeof_unqual((t)->root) cur = new_node;                                                           \
                                                                                                                        \
                     while (cur->parent != nullptr && cur->parent->color == R_(rbt_red)) {                              \
                         /* 7 - parent is red, check the uncle; leaf (null) nodes are considered black */               \
-                        const bool parent_left = R_BST_ISLEFT(cur->parent);                                            \
+                        const bool parent_left = R_BST_LEFT(cur->parent);                                              \
                         typeof_unqual((t)->root) gparent = cur->parent->parent;                                        \
-                        typeof_unqual((t)->root) uncle = parent_left ? gparent->right : gparent->left;                                     \
+                        typeof_unqual((t)->root) uncle = parent_left ? gparent->right : gparent->left;                 \
                                                                                                                        \
                         /* 8 - check if uncle is black, if so, we need rotations and then exit */                      \
                         if (uncle == nullptr || uncle->color == R_(rbt_black)) {                                       \
                             /* uncle is black */                                                                       \
-                            if (R_BST_ISLEFT(cur)) {                                                                   \
+                            if (R_BST_LEFT(cur)) {                                                                     \
                                 if (parent_left) {                                                                     \
                                     /* left-left (single rotation) */                                                  \
                                     R_RBT_ROTATE((t), cur->parent, R_(rbt_right));                                     \
@@ -449,30 +449,30 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
 #define R_RBT_FIX_DELETE(t, node)                                                                                      \
     ({                                                                                                                 \
         while ((node) != nullptr && (node)->color == R_(rbt_double_black) && (node) != (t)->root) {                    \
-            const bool is_left = R_BST_ISLEFT((node));                                                                 \
-            typeof_unqual((node)->parent) sibling = is_left ? (node)->parent->right : (node)->parent->left;                                     \
+            const bool R_UNIQUE(_fix_is_left) = R_BST_LEFT((node));                                                    \
+            typeof_unqual((node)->parent) R_UNIQUE(_fix_sib) = R_UNIQUE(_fix_is_left) ? (node)->parent->right : (node)->parent->left; \
                                                                                                                        \
-            if (sibling != nullptr && sibling->color == R_(rbt_red)) {                                                 \
+            if (R_UNIQUE(_fix_sib) != nullptr && R_UNIQUE(_fix_sib)->color == R_(rbt_red)) {                           \
                 /* CASE 1: Sibling is RED - rotate and recolor to convert to cases 2-4 */                              \
-                const enum rbt_color parent_color = (node)->parent->color;                                             \
-                if (is_left) {                                                                                         \
-                    R_RBT_ROTATE((t), sibling, R_(rbt_left));                                                          \
+                const enum rbt_color R_UNIQUE(_fix_pcolor) = (node)->parent->color;                                    \
+                if (R_UNIQUE(_fix_is_left)) {                                                                          \
+                    R_RBT_ROTATE((t), R_UNIQUE(_fix_sib), R_(rbt_left));                                               \
                 } else {                                                                                               \
-                    R_RBT_ROTATE((t), sibling, R_(rbt_right));                                                         \
+                    R_RBT_ROTATE((t), R_UNIQUE(_fix_sib), R_(rbt_right));                                              \
                 }                                                                                                      \
-                sibling->color = parent_color;                                                                         \
+                R_UNIQUE(_fix_sib)->color = R_UNIQUE(_fix_pcolor);                                                     \
                 (node)->parent->color = R_(rbt_red);                                                                   \
                 /* Get new sibling after rotation (was child of old sibling) */                                        \
-                sibling = is_left ? (node)->parent->right : (node)->parent->left;                                      \
+                R_UNIQUE(_fix_sib) = R_UNIQUE(_fix_is_left) ? (node)->parent->right : (node)->parent->left;            \
             }                                                                                                          \
                                                                                                                        \
-            if (sibling != nullptr) {                                                                                  \
-                const bool sl_red = sibling->left != nullptr && sibling->left->color == R_(rbt_red);                   \
-                const bool sr_red = sibling->right != nullptr && sibling->right->color == R_(rbt_red);                 \
+            if (R_UNIQUE(_fix_sib) != nullptr) {                                                                       \
+                const bool R_UNIQUE(_fix_sl_red) = R_UNIQUE(_fix_sib)->left != nullptr && R_UNIQUE(_fix_sib)->left->color == R_(rbt_red); \
+                const bool R_UNIQUE(_fix_sr_red) = R_UNIQUE(_fix_sib)->right != nullptr && R_UNIQUE(_fix_sib)->right->color == R_(rbt_red); \
                                                                                                                        \
-                if (!sl_red && !sr_red) {                                                                              \
+                if (!R_UNIQUE(_fix_sl_red) && !R_UNIQUE(_fix_sr_red)) {                                                \
                     /* CASE 2: Sibling BLACK, both children BLACK */                                                   \
-                    sibling->color = R_(rbt_red);                                                                      \
+                    R_UNIQUE(_fix_sib)->color = R_(rbt_red);                                                           \
                     (node)->color = R_(rbt_black);                                                                     \
                     if ((node)->parent != nullptr && (node)->parent->color == R_(rbt_red)) {                           \
                         /* Parent is RED - resolve immediately */                                                      \
@@ -485,37 +485,37 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
                             (node)->color = R_(rbt_double_black);                                                      \
                         }                                                                                              \
                     }                                                                                                  \
-                } else if ((is_left && sr_red) || (!is_left && sl_red)) {                                              \
+                } else if ((R_UNIQUE(_fix_is_left) && R_UNIQUE(_fix_sr_red)) || (!R_UNIQUE(_fix_is_left) && R_UNIQUE(_fix_sl_red))) { \
                     /* CASE 4: Far child RED - final fix eliminates double-black */                                    \
-                    if (is_left) {                                                                                     \
-                        const enum rbt_color parent_color = (node)->parent->color;                                     \
-                        R_RBT_ROTATE((t), sibling, R_(rbt_left));                                                      \
-                        sibling->color = parent_color;                                                                 \
-                        sibling->left->color = R_(rbt_black);                                                          \
-                        sibling->right->color = R_(rbt_black);                                                         \
+                    if (R_UNIQUE(_fix_is_left)) {                                                                      \
+                        const enum rbt_color R_UNIQUE(_fix_pcolor2) = (node)->parent->color;                           \
+                        R_RBT_ROTATE((t), R_UNIQUE(_fix_sib), R_(rbt_left));                                           \
+                        R_UNIQUE(_fix_sib)->color = R_UNIQUE(_fix_pcolor2);                                            \
+                        R_UNIQUE(_fix_sib)->left->color = R_(rbt_black);                                               \
+                        R_UNIQUE(_fix_sib)->right->color = R_(rbt_black);                                              \
                     } else {                                                                                           \
-                        const enum rbt_color parent_color = (node)->parent->color;                                     \
-                        R_RBT_ROTATE((t), sibling, R_(rbt_right));                                                     \
-                        sibling->color = parent_color;                                                                 \
-                        sibling->left->color = R_(rbt_black);                                                          \
-                        sibling->right->color = R_(rbt_black);                                                         \
+                        const enum rbt_color R_UNIQUE(_fix_pcolor2) = (node)->parent->color;                           \
+                        R_RBT_ROTATE((t), R_UNIQUE(_fix_sib), R_(rbt_right));                                          \
+                        R_UNIQUE(_fix_sib)->color = R_UNIQUE(_fix_pcolor2);                                            \
+                        R_UNIQUE(_fix_sib)->left->color = R_(rbt_black);                                               \
+                        R_UNIQUE(_fix_sib)->right->color = R_(rbt_black);                                              \
                     }                                                                                                  \
                     (node)->color = R_(rbt_black);                                                                     \
                     (node) = nullptr; /* Exit loop - violation resolved */                                             \
                 } else {                                                                                               \
                     /* CASE 3: Near child RED, far child BLACK - setup for case 4 */                                   \
-                    typeof_unqual(sibling) near_child = is_left ? sibling->left : sibling->right;                                        \
-                    if (is_left) {                                                                                     \
-                        R_RBT_ROTATE((t), near_child, R_(rbt_right));                                                  \
+                    typeof_unqual(R_UNIQUE(_fix_sib)) R_UNIQUE(_fix_near) = R_UNIQUE(_fix_is_left) ? R_UNIQUE(_fix_sib)->left : R_UNIQUE(_fix_sib)->right; \
+                    if (R_UNIQUE(_fix_is_left)) {                                                                      \
+                        R_RBT_ROTATE((t), R_UNIQUE(_fix_near), R_(rbt_right));                                         \
                     } else {                                                                                           \
-                        R_RBT_ROTATE((t), near_child, R_(rbt_left));                                                   \
+                        R_RBT_ROTATE((t), R_UNIQUE(_fix_near), R_(rbt_left));                                          \
                     }                                                                                                  \
                     /* After rotation, get new sibling */                                                              \
-                    sibling = is_left ? (node)->parent->right : (node)->parent->left;                                  \
-                    sibling->color = R_(rbt_black);                                                                    \
+                    R_UNIQUE(_fix_sib) = R_UNIQUE(_fix_is_left) ? (node)->parent->right : (node)->parent->left;        \
+                    R_UNIQUE(_fix_sib)->color = R_(rbt_black);                                                         \
                     /* Old sibling is now a child of new sibling - color it red */                                     \
-                    typeof_unqual(sibling) old_sibling = is_left ? sibling->right : sibling->left;                                       \
-                    old_sibling->color = R_(rbt_red);                                                                  \
+                    typeof_unqual(R_UNIQUE(_fix_sib)) R_UNIQUE(_fix_old_sib) = R_UNIQUE(_fix_is_left) ? R_UNIQUE(_fix_sib)->right : R_UNIQUE(_fix_sib)->left; \
+                    R_UNIQUE(_fix_old_sib)->color = R_(rbt_red);                                                       \
                     /* Loop continues, now in Case 4 */                                                                \
                 }                                                                                                      \
             } else {                                                                                                   \
@@ -531,215 +531,217 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
 
 #define rbt_remove(t, val, ...)                                                                                        \
     ({                                                                                                                 \
-        typeof_unqual((t)->root) node = nullptr;                                                                       \
+        typeof_unqual((t)->root) R_UNIQUE(_remove_node) = nullptr;                                                    \
         if ((t) != nullptr) {                                                                                          \
-            node = bst_find((t), (val), __VA_ARGS__);                                                                  \
-            if (node != nullptr) {                                                                                     \
+            R_UNIQUE(_remove_node) = bst_find((t), (val), __VA_ARGS__);                                               \
+            if (R_UNIQUE(_remove_node) != nullptr) {                                                                  \
                 (t)->size--;                                                                                           \
-                const enum rbt_color node_color = node->color;                                                         \
-                typeof_unqual((t)->root) parent = node->parent;                                                        \
-                const bool is_left_child = parent != nullptr && R_BST_ISLEFT(node);                                    \
+                const enum rbt_color R_UNIQUE(_remove_node_color) = R_UNIQUE(_remove_node)->color;                    \
+                typeof_unqual((t)->root) R_UNIQUE(_remove_parent) = R_UNIQUE(_remove_node)->parent;                   \
+                const bool R_UNIQUE(_remove_is_left_child) = R_UNIQUE(_remove_parent) != nullptr && R_BST_LEFT(R_UNIQUE(_remove_node)); \
                 /* For two-children case, save successor's right child (will replace successor) */                     \
-                typeof_unqual((t)->root) suc_right_child = nullptr;                                                    \
-                typeof_unqual((t)->root) suc_parent_saved = nullptr;                                                   \
-                bool suc_was_left_child = false;                                                                       \
-                if (node->left != nullptr && node->right != nullptr) {                                                 \
-                    typeof_unqual((t)->root) successor = bst_min(node->right);                                                             \
-                    suc_right_child = successor->right;                                                                \
-                    suc_parent_saved = successor->parent;                                                              \
-                    suc_was_left_child = successor->parent != nullptr && R_BST_ISLEFT(successor);                      \
+                typeof_unqual((t)->root) R_UNIQUE(_remove_suc_right_child) = nullptr;                                  \
+                typeof_unqual((t)->root) R_UNIQUE(_remove_suc_parent_saved) = nullptr;                                 \
+                bool R_UNIQUE(_remove_suc_was_left_child) = false;                                                    \
+                typeof_unqual((t)->root) R_UNIQUE(_remove_successor) = nullptr;                                        \
+                if (R_UNIQUE(_remove_node)->left != nullptr && R_UNIQUE(_remove_node)->right != nullptr) {             \
+                    R_UNIQUE(_remove_successor) = bst_min(R_UNIQUE(_remove_node)->right);                             \
+                    R_UNIQUE(_remove_suc_right_child) = R_UNIQUE(_remove_successor)->right;                           \
+                    R_UNIQUE(_remove_suc_parent_saved) = R_UNIQUE(_remove_successor)->parent;                         \
+                    R_UNIQUE(_remove_suc_was_left_child) = R_UNIQUE(_remove_successor)->parent != nullptr && R_BST_LEFT(R_UNIQUE(_remove_successor)); \
                 }                                                                                                      \
-                const enum rbt_color suc_color =                                                                       \
-                    (node->left == nullptr && node->right == nullptr)                                                  \
+                const enum rbt_color R_UNIQUE(_remove_suc_color) =                                                    \
+                    (R_UNIQUE(_remove_node)->left == nullptr && R_UNIQUE(_remove_node)->right == nullptr)             \
                         ? R_(rbt_black)                                                                                \
-                        : (node->left == nullptr                                                                       \
-                               ? node->right->color                                                                    \
-                               : (node->right == nullptr ? node->left->color : bst_min(node->right)->color));          \
-                typeof_unqual((t)->root) node_suc = bst_remove((t), (node));                                           \
+                        : (R_UNIQUE(_remove_node)->left == nullptr                                                    \
+                               ? R_UNIQUE(_remove_node)->right->color                                                 \
+                               : (R_UNIQUE(_remove_node)->right == nullptr ? R_UNIQUE(_remove_node)->left->color : R_UNIQUE(_remove_successor)->color)); \
+                typeof_unqual((t)->root) R_UNIQUE(_remove_node_suc) = bst_remove((t), (R_UNIQUE(_remove_node)));                                           \
                 /* Only fix if both deleted node and replacement were black */                                         \
-                if (node_color == R_(rbt_black) && suc_color == R_(rbt_black) && node_suc != nullptr) {                \
-                    if (suc_right_child != nullptr || suc_parent_saved != nullptr) {                                   \
+                if (R_UNIQUE(_remove_node_color) == R_(rbt_black) && R_UNIQUE(_remove_suc_color) == R_(rbt_black) && R_UNIQUE(_remove_node_suc) != nullptr) {                \
+                    if (R_UNIQUE(_remove_suc_right_child) != nullptr || R_UNIQUE(_remove_suc_parent_saved) != nullptr) {                                   \
                         /* Two-children case: fix at successor's old position */                                       \
-                        const enum rbt_color rc_color =                                                                \
-                            suc_right_child != nullptr ? suc_right_child->color : R_(rbt_black);                       \
-                        if (rc_color == R_(rbt_red)) {                                                                 \
+                        const enum rbt_color R_UNIQUE(_remove_rc_color) =                                                                \
+                            R_UNIQUE(_remove_suc_right_child) != nullptr ? R_UNIQUE(_remove_suc_right_child)->color : R_(rbt_black);                       \
+                        if (R_UNIQUE(_remove_rc_color) == R_(rbt_red)) {                                                                 \
                             /* Right child was red - just color it black */                                            \
-                            suc_right_child->color = R_(rbt_black);                                                    \
-                        } else if (suc_right_child != nullptr) {                                                       \
+                            R_UNIQUE(_remove_suc_right_child)->color = R_(rbt_black);                                                    \
+                        } else if (R_UNIQUE(_remove_suc_right_child) != nullptr) {                                                       \
                             /* Right child exists and is black - double black */                                       \
-                            suc_right_child->color = R_(rbt_double_black);                                             \
-                            R_RBT_FIX_DELETE((t), suc_right_child);                                                    \
+                            R_UNIQUE(_remove_suc_right_child)->color = R_(rbt_double_black);                                             \
+                            R_RBT_FIX_DELETE((t), R_UNIQUE(_remove_suc_right_child));                                                    \
                         } else {                                                                                       \
                             /* No right child (nullptr) - black leaf removed, fix needed */                            \
-                            if (suc_parent_saved == node) {                                                            \
+                            if (R_UNIQUE(_remove_suc_parent_saved) == R_UNIQUE(_remove_node)) {                                                            \
                                 /* Successor was direct right child - fix from successor's new position */             \
-                                /* The double-black is at node_suc's right (null) */                                   \
-                                const bool db_is_right = true; /* Always right for direct right child successor */     \
-                                typeof_unqual(node_suc) sib = node_suc->left;     /* Sibling is on the left */                            \
-                                if (sib != nullptr && sib->color == R_(rbt_red)) {                                     \
-                                    R_RBT_ROTATE((t), sib, R_(rbt_right));                                             \
-                                    sib->color = R_(rbt_black);                                                        \
-                                    node_suc->color = R_(rbt_red);                                                     \
-                                    sib = node_suc->left;                                                              \
+                                /* The double-black is at R_UNIQUE(_remove_node_suc)'s right (null) */                                   \
+                                const bool R_UNIQUE(_remove_db_is_right) = true; /* Always right for direct right child successor */     \
+                                typeof_unqual(R_UNIQUE(_remove_node_suc)) R_UNIQUE(_remove_sib_direct) = R_UNIQUE(_remove_node_suc)->left; /* Sibling is on the left */      \
+                                if (R_UNIQUE(_remove_sib_direct) != nullptr && R_UNIQUE(_remove_sib_direct)->color == R_(rbt_red)) {                       \
+                                    R_RBT_ROTATE((t), R_UNIQUE(_remove_sib_direct), R_(rbt_right));                                      \
+                                    R_UNIQUE(_remove_sib_direct)->color = R_(rbt_black);                                                 \
+                                    R_UNIQUE(_remove_node_suc)->color = R_(rbt_red);                                                     \
+                                    R_UNIQUE(_remove_sib_direct) = R_UNIQUE(_remove_node_suc)->left;                                                       \
                                 }                                                                                      \
-                                if (sib != nullptr) {                                                                  \
-                                    const bool sl_r = sib->left != nullptr && sib->left->color == R_(rbt_red);         \
-                                    const bool sr_r = sib->right != nullptr && sib->right->color == R_(rbt_red);       \
-                                    if (!sl_r && !sr_r && node_suc->color == R_(rbt_red)) {                            \
-                                        node_suc->color = R_(rbt_black);                                               \
-                                        sib->color = R_(rbt_red);                                                      \
-                                    } else if (!sl_r && !sr_r && node_suc->color == R_(rbt_black)) {                   \
-                                        sib->color = R_(rbt_red);                                                      \
-                                        node_suc->color = R_(rbt_double_black);                                        \
-                                        R_RBT_FIX_DELETE((t), node_suc);                                               \
-                                    } else if ((!db_is_right && sr_r) || (db_is_right && sl_r)) {                      \
-                                        const enum rbt_color pc = node_suc->color;                                     \
-                                        R_RBT_ROTATE((t), sib, db_is_right ? R_(rbt_right) : R_(rbt_left));            \
-                                        sib->color = pc;                                                               \
-                                        if (db_is_right) {                                                             \
-                                            sib->right->color = R_(rbt_black);                                         \
-                                            if (sib->left != nullptr)                                                  \
-                                                sib->left->color = R_(rbt_black);                                      \
+                                if (R_UNIQUE(_remove_sib_direct) != nullptr) {                                                           \
+                                    const bool R_UNIQUE(_remove_sl_r_direct) = R_UNIQUE(_remove_sib_direct)->left != nullptr && R_UNIQUE(_remove_sib_direct)->left->color == R_(rbt_red); \
+                                    const bool R_UNIQUE(_remove_sr_r_direct) = R_UNIQUE(_remove_sib_direct)->right != nullptr && R_UNIQUE(_remove_sib_direct)->right->color == R_(rbt_red); \
+                                    if (!R_UNIQUE(_remove_sl_r_direct) && !R_UNIQUE(_remove_sr_r_direct) && R_UNIQUE(_remove_node_suc)->color == R_(rbt_red)) {              \
+                                        R_UNIQUE(_remove_node_suc)->color = R_(rbt_black);                                               \
+                                        R_UNIQUE(_remove_sib_direct)->color = R_(rbt_red);                                               \
+                                    } else if (!R_UNIQUE(_remove_sl_r_direct) && !R_UNIQUE(_remove_sr_r_direct) && R_UNIQUE(_remove_node_suc)->color == R_(rbt_black)) {     \
+                                        R_UNIQUE(_remove_sib_direct)->color = R_(rbt_red);                                               \
+                                        R_UNIQUE(_remove_node_suc)->color = R_(rbt_double_black);                                        \
+                                        R_RBT_FIX_DELETE((t), R_UNIQUE(_remove_node_suc));                                               \
+                                    } else if ((!R_UNIQUE(_remove_db_is_right) && R_UNIQUE(_remove_sr_r_direct)) || (R_UNIQUE(_remove_db_is_right) && R_UNIQUE(_remove_sl_r_direct))) {        \
+                                        const enum rbt_color R_UNIQUE(_remove_pc_direct) = R_UNIQUE(_remove_node_suc)->color;                              \
+                                        R_RBT_ROTATE((t), R_UNIQUE(_remove_sib_direct), R_UNIQUE(_remove_db_is_right) ? R_(rbt_right) : R_(rbt_left));    \
+                                        R_UNIQUE(_remove_sib_direct)->color = R_UNIQUE(_remove_pc_direct);                                                 \
+                                        if (R_UNIQUE(_remove_db_is_right)) {                                                             \
+                                            R_UNIQUE(_remove_sib_direct)->right->color = R_(rbt_black);                                  \
+                                            if (R_UNIQUE(_remove_sib_direct)->left != nullptr)                                           \
+                                                R_UNIQUE(_remove_sib_direct)->left->color = R_(rbt_black);                               \
                                         } else {                                                                       \
-                                            sib->left->color = R_(rbt_black);                                          \
-                                            if (sib->right != nullptr)                                                 \
-                                                sib->right->color = R_(rbt_black);                                     \
+                                            R_UNIQUE(_remove_sib_direct)->left->color = R_(rbt_black);                                   \
+                                            if (R_UNIQUE(_remove_sib_direct)->right != nullptr)                                          \
+                                                R_UNIQUE(_remove_sib_direct)->right->color = R_(rbt_black);                              \
                                         }                                                                              \
                                     } else {                                                                           \
-                                        typeof_unqual(sib) nr = db_is_right ? sib->right : sib->left;                                \
-                                        const enum rbt_color pc2 = node_suc->color;                                    \
-                                        R_RBT_ROTATE((t), nr, db_is_right ? R_(rbt_left) : R_(rbt_right));             \
-                                        nr->color = R_(rbt_black);                                                     \
-                                        nr->parent->color = R_(rbt_red);                                               \
-                                        sib = db_is_right ? node_suc->left : node_suc->right;                          \
-                                        R_RBT_ROTATE((t), sib, db_is_right ? R_(rbt_right) : R_(rbt_left));            \
-                                        sib->color = pc2;                                                              \
-                                        sib->left->color = R_(rbt_black);                                              \
-                                        sib->right->color = R_(rbt_black);                                             \
+                                        typeof_unqual(R_UNIQUE(_remove_sib_direct)) R_UNIQUE(_remove_nr_direct) = R_UNIQUE(_remove_db_is_right) ? R_UNIQUE(_remove_sib_direct)->right : R_UNIQUE(_remove_sib_direct)->left; \
+                                        const enum rbt_color R_UNIQUE(_remove_pc2_direct) = R_UNIQUE(_remove_node_suc)->color;                             \
+                                        R_RBT_ROTATE((t), R_UNIQUE(_remove_nr_direct), R_UNIQUE(_remove_db_is_right) ? R_(rbt_left) : R_(rbt_right));      \
+                                        R_UNIQUE(_remove_nr_direct)->color = R_(rbt_black);                                              \
+                                        R_UNIQUE(_remove_nr_direct)->parent->color = R_(rbt_red);                                        \
+                                        R_UNIQUE(_remove_sib_direct) = R_UNIQUE(_remove_db_is_right) ? R_UNIQUE(_remove_node_suc)->left : R_UNIQUE(_remove_node_suc)->right;                  \
+                                        R_RBT_ROTATE((t), R_UNIQUE(_remove_sib_direct), R_UNIQUE(_remove_db_is_right) ? R_(rbt_right) : R_(rbt_left));    \
+                                        R_UNIQUE(_remove_sib_direct)->color = R_UNIQUE(_remove_pc2_direct);                                                \
+                                        R_UNIQUE(_remove_sib_direct)->left->color = R_(rbt_black);                                       \
+                                        R_UNIQUE(_remove_sib_direct)->right->color = R_(rbt_black);                                      \
                                     }                                                                                  \
                                 }                                                                                      \
                             } else {                                                                                   \
-                                /* Successor was deeper - fix from saved parent position */                            \
-                                const bool suc_was_left = suc_was_left_child;                                          \
-                                typeof_unqual(suc_parent_saved) sib = suc_was_left ? suc_parent_saved->right : suc_parent_saved->left;            \
+                                /* Successor was deeper - fix from saved R_UNIQUE(_remove_parent) position */                            \
+                                const bool R_UNIQUE(_remove_suc_was_left) = R_UNIQUE(_remove_suc_was_left_child);                                          \
+                                typeof_unqual(R_UNIQUE(_remove_suc_parent_saved)) R_UNIQUE(_remove_sib_suc) =                                              \
+                                    R_UNIQUE(_remove_suc_was_left) ? R_UNIQUE(_remove_suc_parent_saved)->right : R_UNIQUE(_remove_suc_parent_saved)->left;                   \
                                 /* Apply same black leaf deletion logic */                                             \
-                                if (sib != nullptr && sib->color == R_(rbt_red)) {                                     \
-                                    R_RBT_ROTATE((t), sib, suc_was_left ? R_(rbt_left) : R_(rbt_right));               \
-                                    sib->color = R_(rbt_black);                                                        \
-                                    suc_parent_saved->color = R_(rbt_red);                                             \
-                                    sib = suc_was_left ? suc_parent_saved->right : suc_parent_saved->left;             \
+                                if (R_UNIQUE(_remove_sib_suc) != nullptr && R_UNIQUE(_remove_sib_suc)->color == R_(rbt_red)) {                             \
+                                    R_RBT_ROTATE((t), R_UNIQUE(_remove_sib_suc), R_UNIQUE(_remove_suc_was_left) ? R_(rbt_left) : R_(rbt_right));           \
+                                    R_UNIQUE(_remove_sib_suc)->color = R_(rbt_black);                                                    \
+                                    R_UNIQUE(_remove_suc_parent_saved)->color = R_(rbt_red);                                             \
+                                    R_UNIQUE(_remove_sib_suc) = R_UNIQUE(_remove_suc_was_left) ? R_UNIQUE(_remove_suc_parent_saved)->right : R_UNIQUE(_remove_suc_parent_saved)->left;         \
                                 }                                                                                      \
-                                if (sib != nullptr) {                                                                  \
-                                    const bool sl_r = sib->left != nullptr && sib->left->color == R_(rbt_red);         \
-                                    const bool sr_r = sib->right != nullptr && sib->right->color == R_(rbt_red);       \
-                                    if (!sl_r && !sr_r && suc_parent_saved->color == R_(rbt_red)) {                    \
-                                        suc_parent_saved->color = R_(rbt_black);                                       \
-                                        sib->color = R_(rbt_red);                                                      \
-                                    } else if (!sl_r && !sr_r && suc_parent_saved->color == R_(rbt_black)) {           \
-                                        sib->color = R_(rbt_red);                                                      \
-                                        suc_parent_saved->color = R_(rbt_double_black);                                \
-                                        R_RBT_FIX_DELETE((t), suc_parent_saved);                                       \
-                                    } else if ((suc_was_left && sr_r) || (!suc_was_left && sl_r)) {                    \
-                                        const enum rbt_color pc = suc_parent_saved->color;                             \
-                                        R_RBT_ROTATE((t), sib, suc_was_left ? R_(rbt_left) : R_(rbt_right));           \
-                                        sib->color = pc;                                                               \
-                                        if (suc_was_left) {                                                            \
-                                            sib->left->color = R_(rbt_black);                                          \
-                                            if (sib->right != nullptr)                                                 \
-                                                sib->right->color = R_(rbt_black);                                     \
+                                if (R_UNIQUE(_remove_sib_suc) != nullptr) {                                                              \
+                                    const bool R_UNIQUE(_remove_sl_r_suc) = R_UNIQUE(_remove_sib_suc)->left != nullptr && R_UNIQUE(_remove_sib_suc)->left->color == R_(rbt_red); \
+                                    const bool R_UNIQUE(_remove_sr_r_suc) = R_UNIQUE(_remove_sib_suc)->right != nullptr && R_UNIQUE(_remove_sib_suc)->right->color == R_(rbt_red);       \
+                                    if (!R_UNIQUE(_remove_sl_r_suc) && !R_UNIQUE(_remove_sr_r_suc) && R_UNIQUE(_remove_suc_parent_saved)->color == R_(rbt_red)) { \
+                                        R_UNIQUE(_remove_suc_parent_saved)->color = R_(rbt_black);                                       \
+                                        R_UNIQUE(_remove_sib_suc)->color = R_(rbt_red);                                                  \
+                                    } else if (!R_UNIQUE(_remove_sl_r_suc) && !R_UNIQUE(_remove_sr_r_suc) && R_UNIQUE(_remove_suc_parent_saved)->color == R_(rbt_black)) {  \
+                                        R_UNIQUE(_remove_sib_suc)->color = R_(rbt_red);                                                  \
+                                        R_UNIQUE(_remove_suc_parent_saved)->color = R_(rbt_double_black);                                \
+                                        R_RBT_FIX_DELETE((t), R_UNIQUE(_remove_suc_parent_saved));                                       \
+                                    } else if ((R_UNIQUE(_remove_suc_was_left) && R_UNIQUE(_remove_sr_r_suc)) || (!R_UNIQUE(_remove_suc_was_left) && R_UNIQUE(_remove_sl_r_suc))) {            \
+                                        const enum rbt_color R_UNIQUE(_remove_pc_suc) = R_UNIQUE(_remove_suc_parent_saved)->color;                         \
+                                        R_RBT_ROTATE((t), R_UNIQUE(_remove_sib_suc), R_UNIQUE(_remove_suc_was_left) ? R_(rbt_left) : R_(rbt_right));       \
+                                        R_UNIQUE(_remove_sib_suc)->color = R_UNIQUE(_remove_pc_suc);                                                       \
+                                        if (R_UNIQUE(_remove_suc_was_left)) {                                                            \
+                                            R_UNIQUE(_remove_sib_suc)->left->color = R_(rbt_black);                                      \
+                                            if (R_UNIQUE(_remove_sib_suc)->right != nullptr)                                             \
+                                                R_UNIQUE(_remove_sib_suc)->right->color = R_(rbt_black);                                 \
                                         } else {                                                                       \
-                                            sib->right->color = R_(rbt_black);                                         \
-                                            if (sib->left != nullptr)                                                  \
-                                                sib->left->color = R_(rbt_black);                                      \
+                                            R_UNIQUE(_remove_sib_suc)->right->color = R_(rbt_black);                                     \
+                                            if (R_UNIQUE(_remove_sib_suc)->left != nullptr)                                              \
+                                                R_UNIQUE(_remove_sib_suc)->left->color = R_(rbt_black);                                  \
                                         }                                                                              \
                                     } else {                                                                           \
-                                        typeof_unqual(sib) nr = suc_was_left ? sib->left : sib->right;                               \
-                                        const enum rbt_color pc2 = suc_parent_saved->color;                            \
-                                        R_RBT_ROTATE((t), nr, suc_was_left ? R_(rbt_right) : R_(rbt_left));            \
-                                        nr->color = R_(rbt_black);                                                     \
-                                        nr->parent->color = R_(rbt_red);                                               \
-                                        sib = suc_was_left ? suc_parent_saved->right : suc_parent_saved->left;         \
-                                        R_RBT_ROTATE((t), sib, suc_was_left ? R_(rbt_left) : R_(rbt_right));           \
-                                        sib->color = pc2;                                                              \
-                                        sib->left->color = R_(rbt_black);                                              \
-                                        sib->right->color = R_(rbt_black);                                             \
+                                        typeof_unqual(R_UNIQUE(_remove_sib_suc)) R_UNIQUE(_remove_nr_suc) = R_UNIQUE(_remove_suc_was_left) ? R_UNIQUE(_remove_sib_suc)->left : R_UNIQUE(_remove_sib_suc)->right; \
+                                        const enum rbt_color R_UNIQUE(_remove_pc2_suc) = R_UNIQUE(_remove_suc_parent_saved)->color;                        \
+                                        R_RBT_ROTATE((t), R_UNIQUE(_remove_nr_suc), R_UNIQUE(_remove_suc_was_left) ? R_(rbt_right) : R_(rbt_left));        \
+                                        R_UNIQUE(_remove_nr_suc)->color = R_(rbt_black);                                                 \
+                                        R_UNIQUE(_remove_nr_suc)->parent->color = R_(rbt_red);                                           \
+                                        R_UNIQUE(_remove_sib_suc) = R_UNIQUE(_remove_suc_was_left) ? R_UNIQUE(_remove_suc_parent_saved)->right : R_UNIQUE(_remove_suc_parent_saved)->left;     \
+                                        R_RBT_ROTATE((t), R_UNIQUE(_remove_sib_suc), R_UNIQUE(_remove_suc_was_left) ? R_(rbt_left) : R_(rbt_right));       \
+                                        R_UNIQUE(_remove_sib_suc)->color = R_UNIQUE(_remove_pc2_suc);                                                      \
+                                        R_UNIQUE(_remove_sib_suc)->left->color = R_(rbt_black);                                          \
+                                        R_UNIQUE(_remove_sib_suc)->right->color = R_(rbt_black);                                             \
                                     }                                                                                  \
                                 }                                                                                      \
                             }                                                                                          \
                         }                                                                                              \
                     } else {                                                                                           \
                         /* One-child case: fix at replacement position */                                              \
-                        node_suc->color = R_(rbt_double_black);                                                        \
-                        R_RBT_FIX_DELETE((t), node_suc);                                                               \
+                        R_UNIQUE(_remove_node_suc)->color = R_(rbt_double_black);                                                        \
+                        R_RBT_FIX_DELETE((t), R_UNIQUE(_remove_node_suc));                                                               \
                     }                                                                                                  \
-                } else if (node_color == R_(rbt_black) && node_suc != nullptr && suc_parent_saved == nullptr &&        \
-                           suc_color == R_(rbt_red)) {                                                                 \
+                } else if (R_UNIQUE(_remove_node_color) == R_(rbt_black) && R_UNIQUE(_remove_node_suc) != nullptr && R_UNIQUE(_remove_suc_parent_saved) == nullptr &&        \
+                           R_UNIQUE(_remove_suc_color) == R_(rbt_red)) {                                                                 \
                     /* One-child case: replacement was red - just color it black */                                    \
-                    node_suc->color = R_(rbt_black);                                                                   \
-                } else if (node_color == R_(rbt_black) && node_suc == nullptr && parent != nullptr) {                  \
-                    /* Black leaf deletion: apply fix from parent's perspective */                                     \
-                    /* The sibling is parent's other child */                                                          \
-                    const bool del_was_left = is_left_child;                                                           \
-                    typeof_unqual(parent) sibling = del_was_left ? parent->right : parent->left;                                        \
-                    if (sibling != nullptr && sibling->color == R_(rbt_red)) {                                         \
-                        /* Parent must be black, sibling is red: rotate and continue */                                \
-                        R_RBT_ROTATE((t), sibling, del_was_left ? R_(rbt_left) : R_(rbt_right));                       \
-                        sibling->color = R_(rbt_black);                                                                \
-                        parent->color = R_(rbt_red);                                                                   \
-                        sibling = del_was_left ? parent->right : parent->left;                                         \
+                    R_UNIQUE(_remove_node_suc)->color = R_(rbt_black);                                                                   \
+                } else if (R_UNIQUE(_remove_node_color) == R_(rbt_black) && R_UNIQUE(_remove_node_suc) == nullptr && R_UNIQUE(_remove_parent) != nullptr) {                  \
+                    /* Black leaf deletion: apply fix from R_UNIQUE(_remove_parent)'s perspective */                                     \
+                    /* The R_UNIQUE(_remove_sibling) is R_UNIQUE(_remove_parent)'s other child */                                                          \
+                    const bool R_UNIQUE(_remove_del_was_left) = R_UNIQUE(_remove_is_left_child);                                                           \
+                    typeof_unqual(R_UNIQUE(_remove_parent)) R_UNIQUE(_remove_sibling) = R_UNIQUE(_remove_del_was_left) ? R_UNIQUE(_remove_parent)->right : R_UNIQUE(_remove_parent)->left;                       \
+                    if (R_UNIQUE(_remove_sibling) != nullptr && R_UNIQUE(_remove_sibling)->color == R_(rbt_red)) {                                         \
+                        /* Parent must be black, R_UNIQUE(_remove_sibling) is red: rotate and continue */                                \
+                        R_RBT_ROTATE((t), R_UNIQUE(_remove_sibling), R_UNIQUE(_remove_del_was_left) ? R_(rbt_left) : R_(rbt_right));                       \
+                        R_UNIQUE(_remove_sibling)->color = R_(rbt_black);                                                                \
+                        R_UNIQUE(_remove_parent)->color = R_(rbt_red);                                                                   \
+                        R_UNIQUE(_remove_sibling) = R_UNIQUE(_remove_del_was_left) ? R_UNIQUE(_remove_parent)->right : R_UNIQUE(_remove_parent)->left;                                         \
                     }                                                                                                  \
-                    if (sibling != nullptr) {                                                                          \
-                        const bool sl_red = sibling->left != nullptr && sibling->left->color == R_(rbt_red);           \
-                        const bool sr_red = sibling->right != nullptr && sibling->right->color == R_(rbt_red);         \
-                        if (!sl_red && !sr_red && parent->color == R_(rbt_red)) {                                      \
-                            /* Parent red, sibling black with black children: recolor */                               \
-                            parent->color = R_(rbt_black);                                                             \
-                            sibling->color = R_(rbt_red);                                                              \
-                        } else if (!sl_red && !sr_red && parent->color == R_(rbt_black)) {                             \
-                            /* Parent black, sibling black with black children: make sibling red, parent DB */         \
-                            sibling->color = R_(rbt_red);                                                              \
-                            parent->color = R_(rbt_double_black);                                                      \
-                            R_RBT_FIX_DELETE((t), parent);                                                             \
+                    if (R_UNIQUE(_remove_sibling) != nullptr) {                                                                          \
+                        const bool R_UNIQUE(_remove_sl_red) = R_UNIQUE(_remove_sibling)->left != nullptr && R_UNIQUE(_remove_sibling)->left->color == R_(rbt_red);           \
+                        const bool R_UNIQUE(_remove_sr_red) = R_UNIQUE(_remove_sibling)->right != nullptr && R_UNIQUE(_remove_sibling)->right->color == R_(rbt_red);         \
+                        if (!R_UNIQUE(_remove_sl_red) && !R_UNIQUE(_remove_sr_red) && R_UNIQUE(_remove_parent)->color == R_(rbt_red)) {                                      \
+                            /* Parent red, R_UNIQUE(_remove_sibling) black with black children: recolor */                               \
+                            R_UNIQUE(_remove_parent)->color = R_(rbt_black);                                                             \
+                            R_UNIQUE(_remove_sibling)->color = R_(rbt_red);                                                              \
+                        } else if (!R_UNIQUE(_remove_sl_red) && !R_UNIQUE(_remove_sr_red) && R_UNIQUE(_remove_parent)->color == R_(rbt_black)) {                             \
+                            /* Parent black, R_UNIQUE(_remove_sibling) black with black children: make R_UNIQUE(_remove_sibling) red, R_UNIQUE(_remove_parent) DB */         \
+                            R_UNIQUE(_remove_sibling)->color = R_(rbt_red);                                                              \
+                            R_UNIQUE(_remove_parent)->color = R_(rbt_double_black);                                                      \
+                            R_RBT_FIX_DELETE((t), R_UNIQUE(_remove_parent));                                                             \
                         } else {                                                                                       \
                             /* Sibling has at least one red child: rotate and recolor */                               \
-                            if ((del_was_left && sr_red) || (!del_was_left && sl_red)) {                               \
+                            if ((R_UNIQUE(_remove_del_was_left) && R_UNIQUE(_remove_sr_red)) || (!R_UNIQUE(_remove_del_was_left) && R_UNIQUE(_remove_sl_red))) {                               \
                                 /* Far child is red: final rotation */                                                 \
-                                const enum rbt_color pc = parent->color;                                               \
-                                if (del_was_left) {                                                                    \
-                                    R_RBT_ROTATE((t), sibling, R_(rbt_left));                                          \
-                                    sibling->color = pc;                                                               \
-                                    sibling->left->color = R_(rbt_black);                                              \
-                                    if (sibling->right != nullptr)                                                     \
-                                        sibling->right->color = R_(rbt_black);                                         \
+                                const enum rbt_color R_UNIQUE(_remove_pc_leaf) = R_UNIQUE(_remove_parent)->color;                                          \
+                                if (R_UNIQUE(_remove_del_was_left)) {                                                                    \
+                                    R_RBT_ROTATE((t), R_UNIQUE(_remove_sibling), R_(rbt_left));                                          \
+                                    R_UNIQUE(_remove_sibling)->color = R_UNIQUE(_remove_pc_leaf);                                                          \
+                                    R_UNIQUE(_remove_sibling)->left->color = R_(rbt_black);                                              \
+                                    if (R_UNIQUE(_remove_sibling)->right != nullptr)                                                     \
+                                        R_UNIQUE(_remove_sibling)->right->color = R_(rbt_black);                                         \
                                 } else {                                                                               \
-                                    R_RBT_ROTATE((t), sibling, R_(rbt_right));                                         \
-                                    sibling->color = pc;                                                               \
-                                    sibling->right->color = R_(rbt_black);                                             \
-                                    if (sibling->left != nullptr)                                                      \
-                                        sibling->left->color = R_(rbt_black);                                          \
+                                    R_RBT_ROTATE((t), R_UNIQUE(_remove_sibling), R_(rbt_right));                                         \
+                                    R_UNIQUE(_remove_sibling)->color = R_UNIQUE(_remove_pc_leaf);                                                               \
+                                    R_UNIQUE(_remove_sibling)->right->color = R_(rbt_black);                                             \
+                                    if (R_UNIQUE(_remove_sibling)->left != nullptr)                                                      \
+                                        R_UNIQUE(_remove_sibling)->left->color = R_(rbt_black);                                          \
                                 }                                                                                      \
                             } else {                                                                                   \
                                 /* Near child is red: rotate to make it far, then rotate again */                      \
-                                typeof_unqual(sibling) near = del_was_left ? sibling->left : sibling->right;                             \
-                                const enum rbt_color parent_color = parent->color;                                     \
-                                if (del_was_left) {                                                                    \
-                                    R_RBT_ROTATE((t), near, R_(rbt_right));                                            \
-                                    near->color = R_(rbt_black);                                                       \
-                                    near->parent->color = R_(rbt_red);                                                 \
-                                    sibling = parent->right;                                                           \
-                                    R_RBT_ROTATE((t), sibling, R_(rbt_left));                                          \
-                                    sibling->color = parent_color;                                                     \
-                                    sibling->left->color = R_(rbt_black);                                              \
-                                    sibling->right->color = R_(rbt_black);                                             \
+                                typeof_unqual(R_UNIQUE(_remove_sibling)) R_UNIQUE(_remove_near) = R_UNIQUE(_remove_del_was_left) ? R_UNIQUE(_remove_sibling)->left : R_UNIQUE(_remove_sibling)->right;           \
+                                const enum rbt_color R_UNIQUE(_remove_parent_color) = R_UNIQUE(_remove_parent)->color;                                     \
+                                if (R_UNIQUE(_remove_del_was_left)) {                                                                    \
+                                    R_RBT_ROTATE((t), R_UNIQUE(_remove_near), R_(rbt_right));                                            \
+                                    R_UNIQUE(_remove_near)->color = R_(rbt_black);                                                       \
+                                    R_UNIQUE(_remove_near)->parent->color = R_(rbt_red);                                                 \
+                                    R_UNIQUE(_remove_sibling) = R_UNIQUE(_remove_parent)->right;                                                           \
+                                    R_RBT_ROTATE((t), R_UNIQUE(_remove_sibling), R_(rbt_left));                                          \
+                                    R_UNIQUE(_remove_sibling)->color = R_UNIQUE(_remove_parent_color);                                                     \
+                                    R_UNIQUE(_remove_sibling)->left->color = R_(rbt_black);                                              \
+                                    R_UNIQUE(_remove_sibling)->right->color = R_(rbt_black);                                             \
                                 } else {                                                                               \
-                                    R_RBT_ROTATE((t), near, R_(rbt_left));                                             \
-                                    near->color = R_(rbt_black);                                                       \
-                                    near->parent->color = R_(rbt_red);                                                 \
-                                    sibling = parent->left;                                                            \
-                                    R_RBT_ROTATE((t), sibling, R_(rbt_right));                                         \
-                                    sibling->color = parent_color;                                                     \
-                                    sibling->right->color = R_(rbt_black);                                             \
-                                    sibling->left->color = R_(rbt_black);                                              \
+                                    R_RBT_ROTATE((t), R_UNIQUE(_remove_near), R_(rbt_left));                                             \
+                                    R_UNIQUE(_remove_near)->color = R_(rbt_black);                                                       \
+                                    R_UNIQUE(_remove_near)->parent->color = R_(rbt_red);                                                 \
+                                    R_UNIQUE(_remove_sibling) = R_UNIQUE(_remove_parent)->left;                                                            \
+                                    R_RBT_ROTATE((t), R_UNIQUE(_remove_sibling), R_(rbt_right));                                         \
+                                    R_UNIQUE(_remove_sibling)->color = R_UNIQUE(_remove_parent_color);                                                     \
+                                    R_UNIQUE(_remove_sibling)->right->color = R_(rbt_black);                                             \
+                                    R_UNIQUE(_remove_sibling)->left->color = R_(rbt_black);                                              \
                                 }                                                                                      \
                             }                                                                                          \
                         }                                                                                              \
@@ -747,7 +749,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
                 }                                                                                                      \
             }                                                                                                          \
         }                                                                                                              \
-        /* return */ node;                                                                                             \
+        /* return */ R_UNIQUE(_remove_node);                                                                                             \
     })
 
 #endif // RUNE_RBT_API
