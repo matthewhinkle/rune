@@ -94,6 +94,8 @@ static rstr * rstr_new(const char * data, const size_t max_len) {
     }
 
     rstr * r = rstr_alloc(len);
+    if (r == nullptr)
+        return nullptr;
     r->hash = hash;
     memcpy(r->data, data, len);
     return r;
