@@ -15,7 +15,11 @@
  *   list_free(lst)           Free list memory
  *   list_get(lst, idx)       Get element at index
  *   list_add(lst, item)      Append item to end
- *   list_insert(lst, idx, item) Insert item at index
+ *   list_insert(
+ *      lst,
+ *      idx,
+ *      item
+ *   )                        Insert item at index
  *   list_remove(lst, idx)    Remove item at index
  *   list_grow(lst)           Ensure capacity for next item
  *   list_shrink(lst)         Reduce capacity if sparse
@@ -54,7 +58,6 @@
 
 // ReSharper disable once CppMissingIncludeGuard
 // ReSharper disable CppInconsistentNaming
-#include <assert.h>
 #include <stdatomic.h>
 #include <stdlib.h>
 #include <string.h>
@@ -81,33 +84,20 @@
 
 #define list_free(lst)                                                                                                 \
     ({                                                                                                                 \
-        if ((lst) != nullptr) {                                                                                        \
-            if ((lst)->data != nullptr) {                                                                              \
-                mem_free((lst)->data, (lst)->capacity * list_type_size(lst));                                          \
-                (lst)->data = nullptr;                                                                                 \
-            }                                                                                                          \
-                                                                                                                       \
-            (lst)->size = 0;                                                                                           \
-            (lst)->capacity = 0;                                                                                       \
+        if ((lst)->data != nullptr) {                                                                                  \
+            mem_free((lst)->data, (lst)->capacity * list_type_size(lst));                                              \
+            (lst)->data = nullptr;                                                                                     \
         }                                                                                                              \
+        (lst)->size = 0;                                                                                               \
+        (lst)->capacity = 0;                                                                                           \
     })
 
 #define list_type_size(lst) sizeof(typeof_unqual(*(lst)->data))
 
-#define list_get(lst, idx)                                                                                             \
-    ({                                                                                                                 \
-        assert((lst) != nullptr);                                                                                      \
-        assert((lst)->data != nullptr);                                                                                \
-        assert((size_t)(idx) < (lst)->size);                                                                           \
-        (lst)->data[(idx)];                                                                                            \
-    })
+#define list_get(lst, idx) ((lst)->data[(idx)])
 
 #define list_resize(lst, new_capacity)                                                                                 \
     ({                                                                                                                 \
-        assert((lst) != nullptr);                                                                                      \
-        assert((lst)->data != nullptr);                                                                                \
-        assert((new_capacity) >= (lst)->size);                                                                         \
-                                                                                                                       \
         void * data =                                                                                                  \
             mem_realloc((lst)->data, (lst)->capacity * list_type_size(lst), (new_capacity) * list_type_size(lst));     \
         (lst)->capacity = new_capacity;                                                                                \
@@ -116,11 +106,10 @@
 
 #define list_grow(lst)                                                                                                 \
     ({                                                                                                                 \
-        if ((lst)->capacity <= 0) {                                                                                    \
+        if ((lst)->capacity == 0) {                                                                                    \
             (lst)->capacity = 4;                                                                                       \
             (lst)->data = mem_alloc_zero((lst)->capacity * list_type_size(lst));                                       \
         }                                                                                                              \
-                                                                                                                       \
         while ((lst)->size >= (lst)->capacity) {                                                                       \
             list_resize((lst), (lst)->capacity << 1);                                                                  \
         }                                                                                                              \
@@ -128,8 +117,6 @@
 
 #define list_shrink(lst)                                                                                               \
     ({                                                                                                                 \
-        assert((lst) != nullptr);                                                                                      \
-                                                                                                                       \
         while ((lst)->size < (lst)->capacity >> 2) {                                                                   \
             list_resize((lst), (lst)->capacity >> 1);                                                                  \
         }                                                                                                              \
@@ -137,52 +124,36 @@
 
 #define list_add(lst, item)                                                                                            \
     ({                                                                                                                 \
-        assert((lst) != nullptr);                                                                                      \
-                                                                                                                       \
         const size_t idx = (lst)->size;                                                                                \
         (lst)->size++;                                                                                                 \
         list_grow((lst));                                                                                              \
-                                                                                                                       \
         (lst)->data[idx] = (item);                                                                                     \
     })
 
 #define list_insert(lst, idx, item)                                                                                    \
     ({                                                                                                                 \
-        assert((lst) != nullptr);                                                                                      \
-        assert((lst)->data != nullptr);                                                                                \
-        assert((idx) <= (lst)->size);                                                                                  \
-                                                                                                                       \
         (lst)->size++;                                                                                                 \
         list_grow((lst));                                                                                              \
-                                                                                                                       \
         const size_t tail = (lst)->size - (idx);                                                                       \
         if (tail > 0) {                                                                                                \
             void * dst = &((lst)->data)[(idx) + 1];                                                                    \
             void * src = &((lst)->data)[(idx)];                                                                        \
             memmove(dst, src, tail * list_type_size(lst));                                                             \
         }                                                                                                              \
-                                                                                                                       \
         (lst)->data[(idx)] = (item);                                                                                   \
     })
 
 #define list_remove(lst, idx)                                                                                          \
     ({                                                                                                                 \
-        assert((lst) != nullptr);                                                                                      \
-        assert((lst)->data != nullptr);                                                                                \
-        assert((idx) < (lst)->size);                                                                                   \
-                                                                                                                       \
         auto R_UNIQUE(removed) = (lst)->data[(idx)];                                                                   \
-                                                                                                                       \
         const size_t tail = (lst)->size - (idx) - 1;                                                                   \
         if (tail > 0) {                                                                                                \
             void * dst = &((lst)->data)[(idx)];                                                                        \
             void * src = &((lst)->data)[(idx) + 1];                                                                    \
             memmove(dst, src, tail * list_type_size(lst));                                                             \
         }                                                                                                              \
-                                                                                                                       \
         (lst)->size--;                                                                                                 \
         list_shrink((lst));                                                                                            \
-                                                                                                                       \
         R_UNIQUE(removed);                                                                                             \
     })
 
@@ -242,27 +213,14 @@ static LIST(T) R_LIST_OF(T)(const T * items, size_t count) {
 
 #define lfq_capacity(q) (q)->capacity
 
-#define lfq_depth(q)                                                                                                   \
-    ({                                                                                                                 \
-        assert((q) != nullptr);                                                                                        \
-        (atomic_load(&(q)->tail) - atomic_load(&(q)->head)) % (q)->capacity;                                           \
-    })
+#define lfq_depth(q) ((atomic_load(&(q)->tail) - atomic_load(&(q)->head)) % (q)->capacity)
 
-#define lfq_empty(q)                                                                                                   \
-    ({                                                                                                                 \
-        assert((q) != nullptr);                                                                                        \
-        atomic_load(&(q)->head) == atomic_load(&(q)->tail);                                                            \
-    })
+#define lfq_empty(q) (atomic_load(&(q)->head) == atomic_load(&(q)->tail))
 
-#define lfq_full(q)                                                                                                    \
-    ({                                                                                                                 \
-        assert((q) != nullptr);                                                                                        \
-        (atomic_load(&(q)->tail) + 1) % (q)->capacity == atomic_load(&(q)->head);                                      \
-    })
+#define lfq_full(q) (((atomic_load(&(q)->tail) + 1) % (q)->capacity) == atomic_load(&(q)->head))
 
 #define lfq_peek(q)                                                                                                    \
     ({                                                                                                                 \
-        assert((q) != nullptr);                                                                                        \
         const size_t head = atomic_load(&(q)->head);                                                                   \
         typeof((q)->data[0]) result = (typeof((q)->data[0])){0};                                                       \
         if (head != atomic_load(&(q)->tail)) {                                                                         \
@@ -273,14 +231,12 @@ static LIST(T) R_LIST_OF(T)(const T * items, size_t count) {
 
 #define lfq_clear(q)                                                                                                   \
     ({                                                                                                                 \
-        assert((q) != nullptr);                                                                                        \
         atomic_store(&(q)->head, 0);                                                                                   \
         atomic_store(&(q)->tail, 0);                                                                                   \
     })
 
 #define lfq_push(q, item)                                                                                              \
     ({                                                                                                                 \
-        assert((q) != nullptr);                                                                                        \
         const size_t tail = atomic_load(&(q)->tail);                                                                   \
         const size_t next_tail = (tail + 1) % (q)->capacity;                                                           \
         auto R_UNIQUE(result) = item;                                                                                  \
@@ -296,7 +252,6 @@ static LIST(T) R_LIST_OF(T)(const T * items, size_t count) {
 
 #define lfq_pop(q)                                                                                                     \
     ({                                                                                                                 \
-        assert((q) != nullptr);                                                                                        \
         const size_t head = atomic_load(&(q)->head);                                                                   \
         typeof((q)->data[0]) item = (typeof((q)->data[0])){0};                                                         \
         if (head != atomic_load(&(q)->tail)) {                                                                         \
@@ -310,8 +265,6 @@ static LIST(T) R_LIST_OF(T)(const T * items, size_t count) {
 
 #define lfq_resize(q, new_capacity)                                                                                    \
     ({                                                                                                                 \
-        assert((q) != nullptr);                                                                                        \
-        assert((new_capacity) >= (q)->capacity);                                                                       \
         const size_t old_capacity = (q)->capacity;                                                                     \
         const size_t head = (q)->head;                                                                                 \
         const size_t tail = (q)->tail;                                                                                 \
