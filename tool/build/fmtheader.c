@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -232,12 +233,23 @@ static int process_file(const char * filename, int use_color) {
     char temp_filename[max_line_length];
     snprintf(temp_filename, sizeof(temp_filename), "%s.tmp", filename);
 
-    FILE * out = fopen(temp_filename, "w");
-    if (!out) {
+    int fd = open(temp_filename, O_CREAT | O_WRONLY | O_EXCL, 0600);
+    if (fd < 0) {
         char error_msg[max_line_length];
         snprintf(error_msg, sizeof(error_msg), "Error: Cannot write to file '%s'\n", filename);
         print_colored_error(color_red_bold, error_msg, use_color);
         fclose(in);
+        return 1;
+    }
+
+    FILE * out = fdopen(fd, "w");
+    if (!out) {
+        char error_msg[max_line_length];
+        snprintf(error_msg, sizeof(error_msg), "Error: Cannot write to file '%s'\n", filename);
+        print_colored_error(color_red_bold, error_msg, use_color);
+        close(fd);
+        fclose(in);
+        remove(temp_filename);
         return 1;
     }
 

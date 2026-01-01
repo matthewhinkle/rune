@@ -713,8 +713,7 @@ static void r_error_message__for_unknown_code__should_return_unknown(void) {
 
 static void err_print__with_no_error__should_print_no_error(void) {
     err_clear();
-    // Print to /dev/null to avoid test output pollution
-    FILE * null_stream = fopen("/dev/null", "w");
+    FILE * null_stream = open_null_stream();
     if (null_stream) {
         err_print(null_stream);
         fclose(null_stream);
@@ -725,8 +724,7 @@ static void err_print__with_no_error__should_print_no_error(void) {
 static void err_print__with_error__should_not_crash(void) {
     err_clear();
     err_set(R_ERR_NULL_POINTER, "Test error");
-    // Print to /dev/null to avoid test output pollution
-    FILE * null_stream = fopen("/dev/null", "w");
+    FILE * null_stream = open_null_stream();
     if (null_stream) {
         err_print(null_stream);
         fclose(null_stream);
@@ -737,8 +735,7 @@ static void err_print__with_error__should_not_crash(void) {
 
 static void err_print_stack__with_no_errors__should_not_crash(void) {
     err_clear();
-    // Print to /dev/null to avoid test output pollution
-    FILE * null_stream = fopen("/dev/null", "w");
+    FILE * null_stream = open_null_stream();
     if (null_stream) {
         err_print_stack(null_stream);
         fclose(null_stream);
@@ -751,8 +748,7 @@ static void err_print_stack__with_multiple_errors__should_not_crash(void) {
     err_set(R_ERR_NULL_POINTER, "Error 1");
     err_set(R_ERR_INVALID_ARGUMENT, "Error 2");
     err_set(R_ERR_OVERFLOW, "Error 3");
-    // Print to /dev/null to avoid test output pollution
-    FILE * null_stream = fopen("/dev/null", "w");
+    FILE * null_stream = open_null_stream();
     if (null_stream) {
         err_print_stack(null_stream);
         fclose(null_stream);
