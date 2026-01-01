@@ -6,9 +6,7 @@
 #define RUNE_TEST_H
 
 #include "CUnit/Basic.h"
-#include <fcntl.h>
 #include <stdio.h>
-#include <unistd.h>
 
 #define ADD_TEST(suite, test_func)                                                                 \
     if (NULL == CU_add_test(suite, #test_func, test_func)) {                                       \
@@ -22,15 +20,11 @@
  * Returns NULL if opening fails.
  */
 static inline FILE * open_null_stream(void) {
-    int fd = open("/dev/null", O_WRONLY);
-    if (fd >= 0) {
-        FILE * null_stream = fdopen(fd, "w");
-        if (null_stream) {
-            return null_stream;
-        }
-        close(fd);
-    }
-    return NULL;
+#ifdef _WIN32
+    return fopen("NUL", "w");
+#else
+    return fopen("/dev/null", "w");
+#endif
 }
 
 #endif // RUNE_TEST_H
