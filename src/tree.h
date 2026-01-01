@@ -70,7 +70,7 @@
 
 #define bst_min(node)                                                                                                  \
     ({                                                                                                                 \
-        auto cur = (node);                                                                                             \
+        typeof_unqual((node)) cur = (node);                                                                            \
         while (cur != nullptr && cur->left != nullptr) {                                                               \
             cur = cur->left;                                                                                           \
         }                                                                                                              \
@@ -79,7 +79,7 @@
 
 #define bst_find(t, val, ...)                                                                                          \
     ({                                                                                                                 \
-        auto search_cur = (t)->root;                                                                                   \
+        typeof_unqual((t)->root) search_cur = (t)->root;                                                               \
         while (search_cur != nullptr && R_BST_CMP((val), search_cur->data __VA_OPT__(, ) __VA_ARGS__) != 0) {          \
             search_cur = R_BST_CMP((val), search_cur->data __VA_OPT__(, ) __VA_ARGS__) < 0 ? search_cur->left          \
                                                                                            : search_cur->right;        \
@@ -167,7 +167,7 @@
             R_BST_REPLACE((t), (node), (node)->left);                                                                  \
         } else {                                                                                                       \
             /* node has left and right children */                                                                     \
-            auto min_right = bst_min((node)->right);                                                                   \
+            typeof_unqual((node)->right) min_right = bst_min((node)->right);                                                                   \
             R_BST_SUCCEED((t), (node), min_right);                                                                     \
             suc = min_right;                                                                                           \
         }                                                                                                              \
@@ -203,7 +203,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
 #define R_RBT_PARENT(t, val, out_dir, ...)                                                                             \
     ({                                                                                                                 \
         typeof_unqual((t)->root) search_parent = nullptr;                                                              \
-        auto search_cur = (t)->root;                                                                                   \
+        typeof_unqual((t)->root) search_cur = (t)->root;                                                               \
         int cmp_result = 0;                                                                                            \
         while (search_cur != nullptr &&                                                                                \
                (cmp_result = R_BST_CMP((val), search_cur->data __VA_OPT__(, ) __VA_ARGS__)) != 0) {                    \
@@ -249,12 +249,12 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
  */
 #define R_RBT_ROTATE(t, node, dir)                                                                                     \
     ({                                                                                                                 \
-        auto node_parent = (node)->parent;                                                                             \
+        typeof_unqual((node)->parent) node_parent = (node)->parent;                                                    \
         if (node_parent != nullptr) {                                                                                  \
             /* cannot rotate root */                                                                                   \
                                                                                                                        \
             /* update the parent pointers */                                                                           \
-            const auto rotate_gparent = node_parent->parent;                                                           \
+            const typeof_unqual(node_parent->parent) rotate_gparent = node_parent->parent;                                                           \
             if (rotate_gparent == nullptr) {                                                                           \
                 /* parent is root */                                                                                   \
                 t->root = (node);                                                                                      \
@@ -301,7 +301,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
         if ((t) != nullptr) {                                                                                          \
             /* 1 - find the parent and direction */                                                                    \
             enum rbt_dir dir = R_(rbt_exists);                                                                         \
-            auto parent = R_RBT_PARENT((t), (val), &dir __VA_OPT__(, ) __VA_ARGS__);                                   \
+            typeof_unqual((t)->root) parent = R_RBT_PARENT((t), (val), &dir __VA_OPT__(, ) __VA_ARGS__);                                   \
                                                                                                                        \
             /* 2 - check if the node already exists */                                                                 \
             if (dir != R_(rbt_exists)) {                                                                               \
@@ -325,13 +325,13 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
                     }                                                                                                  \
                                                                                                                        \
                     /* 6 - handle red parent violations */                                                             \
-                    auto cur = new_node;                                                                               \
+                    typeof_unqual((t)->root) cur = new_node;                                                            \
                                                                                                                        \
                     while (cur->parent != nullptr && cur->parent->color == R_(rbt_red)) {                              \
                         /* 7 - parent is red, check the uncle; leaf (null) nodes are considered black */               \
                         const bool parent_left = R_BST_ISLEFT(cur->parent);                                            \
-                        auto gparent = cur->parent->parent;                                                            \
-                        auto uncle = parent_left ? gparent->right : gparent->left;                                     \
+                        typeof_unqual((t)->root) gparent = cur->parent->parent;                                        \
+                        typeof_unqual((t)->root) uncle = parent_left ? gparent->right : gparent->left;                                     \
                                                                                                                        \
                         /* 8 - check if uncle is black, if so, we need rotations and then exit */                      \
                         if (uncle == nullptr || uncle->color == R_(rbt_black)) {                                       \
@@ -447,7 +447,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
     ({                                                                                                                 \
         while ((node) != nullptr && (node)->color == R_(rbt_double_black) && (node) != (t)->root) {                    \
             const bool is_left = R_BST_ISLEFT((node));                                                                 \
-            auto sibling = is_left ? (node)->parent->right : (node)->parent->left;                                     \
+            typeof_unqual((node)->parent) sibling = is_left ? (node)->parent->right : (node)->parent->left;                                     \
                                                                                                                        \
             if (sibling != nullptr && sibling->color == R_(rbt_red)) {                                                 \
                 /* CASE 1: Sibling is RED - rotate and recolor to convert to cases 2-4 */                              \
@@ -501,7 +501,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
                     (node) = nullptr; /* Exit loop - violation resolved */                                             \
                 } else {                                                                                               \
                     /* CASE 3: Near child RED, far child BLACK - setup for case 4 */                                   \
-                    auto near_child = is_left ? sibling->left : sibling->right;                                        \
+                    typeof_unqual(sibling) near_child = is_left ? sibling->left : sibling->right;                                        \
                     if (is_left) {                                                                                     \
                         R_RBT_ROTATE((t), near_child, R_(rbt_right));                                                  \
                     } else {                                                                                           \
@@ -511,7 +511,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
                     sibling = is_left ? (node)->parent->right : (node)->parent->left;                                  \
                     sibling->color = R_(rbt_black);                                                                    \
                     /* Old sibling is now a child of new sibling - color it red */                                     \
-                    auto old_sibling = is_left ? sibling->right : sibling->left;                                       \
+                    typeof_unqual(sibling) old_sibling = is_left ? sibling->right : sibling->left;                                       \
                     old_sibling->color = R_(rbt_red);                                                                  \
                     /* Loop continues, now in Case 4 */                                                                \
                 }                                                                                                      \
@@ -541,7 +541,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
                 typeof_unqual((t)->root) suc_parent_saved = nullptr;                                                   \
                 bool suc_was_left_child = false;                                                                       \
                 if (node->left != nullptr && node->right != nullptr) {                                                 \
-                    auto successor = bst_min(node->right);                                                             \
+                    typeof_unqual((t)->root) successor = bst_min(node->right);                                                             \
                     suc_right_child = successor->right;                                                                \
                     suc_parent_saved = successor->parent;                                                              \
                     suc_was_left_child = successor->parent != nullptr && R_BST_ISLEFT(successor);                      \
@@ -572,7 +572,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
                                 /* Successor was direct right child - fix from successor's new position */             \
                                 /* The double-black is at node_suc's right (null) */                                   \
                                 const bool db_is_right = true; /* Always right for direct right child successor */     \
-                                auto sib = node_suc->left;     /* Sibling is on the left */                            \
+                                typeof_unqual(node_suc) sib = node_suc->left;     /* Sibling is on the left */                            \
                                 if (sib != nullptr && sib->color == R_(rbt_red)) {                                     \
                                     R_RBT_ROTATE((t), sib, R_(rbt_right));                                             \
                                     sib->color = R_(rbt_black);                                                        \
@@ -603,7 +603,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
                                                 sib->right->color = R_(rbt_black);                                     \
                                         }                                                                              \
                                     } else {                                                                           \
-                                        auto nr = db_is_right ? sib->right : sib->left;                                \
+                                        typeof_unqual(sib) nr = db_is_right ? sib->right : sib->left;                                \
                                         const enum rbt_color pc2 = node_suc->color;                                    \
                                         R_RBT_ROTATE((t), nr, db_is_right ? R_(rbt_left) : R_(rbt_right));             \
                                         nr->color = R_(rbt_black);                                                     \
@@ -618,7 +618,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
                             } else {                                                                                   \
                                 /* Successor was deeper - fix from saved parent position */                            \
                                 const bool suc_was_left = suc_was_left_child;                                          \
-                                auto sib = suc_was_left ? suc_parent_saved->right : suc_parent_saved->left;            \
+                                typeof_unqual(suc_parent_saved) sib = suc_was_left ? suc_parent_saved->right : suc_parent_saved->left;            \
                                 /* Apply same black leaf deletion logic */                                             \
                                 if (sib != nullptr && sib->color == R_(rbt_red)) {                                     \
                                     R_RBT_ROTATE((t), sib, suc_was_left ? R_(rbt_left) : R_(rbt_right));               \
@@ -650,7 +650,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
                                                 sib->left->color = R_(rbt_black);                                      \
                                         }                                                                              \
                                     } else {                                                                           \
-                                        auto nr = suc_was_left ? sib->left : sib->right;                               \
+                                        typeof_unqual(sib) nr = suc_was_left ? sib->left : sib->right;                               \
                                         const enum rbt_color pc2 = suc_parent_saved->color;                            \
                                         R_RBT_ROTATE((t), nr, suc_was_left ? R_(rbt_right) : R_(rbt_left));            \
                                         nr->color = R_(rbt_black);                                                     \
@@ -677,7 +677,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
                     /* Black leaf deletion: apply fix from parent's perspective */                                     \
                     /* The sibling is parent's other child */                                                          \
                     const bool del_was_left = is_left_child;                                                           \
-                    auto sibling = del_was_left ? parent->right : parent->left;                                        \
+                    typeof_unqual(parent) sibling = del_was_left ? parent->right : parent->left;                                        \
                     if (sibling != nullptr && sibling->color == R_(rbt_red)) {                                         \
                         /* Parent must be black, sibling is red: rotate and continue */                                \
                         R_RBT_ROTATE((t), sibling, del_was_left ? R_(rbt_left) : R_(rbt_right));                       \
@@ -717,7 +717,7 @@ enum rbt_dir { R_(rbt_left), R_(rbt_right), R_(rbt_exists) };
                                 }                                                                                      \
                             } else {                                                                                   \
                                 /* Near child is red: rotate to make it far, then rotate again */                      \
-                                auto near = del_was_left ? sibling->left : sibling->right;                             \
+                                typeof_unqual(sibling) near = del_was_left ? sibling->left : sibling->right;                             \
                                 const enum rbt_color parent_color = parent->color;                                     \
                                 if (del_was_left) {                                                                    \
                                     R_RBT_ROTATE((t), near, R_(rbt_right));                                            \
