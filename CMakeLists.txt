@@ -19,8 +19,8 @@ endif ()
 
 # Suppress MSVC deprecation warnings for standard C/POSIX functions (e.g., fopen, strcpy)
 # This is needed when using Clang on Windows with MSVC headers
-if (MSVC)
-    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+if (MSVC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
+    add_compile_options(-D_CRT_SECURE_NO_WARNINGS)
 endif ()
 
 # Suppress non-portable but intentional extensions and conventions
