@@ -3,9 +3,6 @@
  */
 
 // ReSharper disable CppDFATimeOver
-// Suppress variable shadowing warnings from macro expansions (rbt_remove, etc.)
-#pragma GCC diagnostic ignored "-Wshadow"
-#pragma clang diagnostic ignored "-Wshadow"
 
 #include "../src/tree.h"
 #include "CUnit/Basic.h"
