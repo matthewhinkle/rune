@@ -17,6 +17,12 @@ else ()
     add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 endif ()
 
+# Suppress MSVC deprecation warnings for standard C/POSIX functions (e.g., fopen, strcpy)
+# This is needed when using Clang on Windows with MSVC headers
+if (MSVC)
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+endif ()
+
 # Suppress non-portable but intentional extensions and conventions
 if (MSVC)
     add_compile_options(/wd4668)  # Undefined preprocessor identifier
