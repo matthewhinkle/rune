@@ -50,6 +50,9 @@
 
 #include "r.h"
 
+// Suppress pedantic warnings about GNU statement expressions (intentional, required for macro-based templates)
+#pragma GCC diagnostic ignored "-Wpedantic"
+
 // =====================================================================================================================
 // Binary Search Tree
 // =====================================================================================================================
