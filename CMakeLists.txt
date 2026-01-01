@@ -19,8 +19,10 @@ endif ()
 
 # Suppress MSVC deprecation warnings for standard C/POSIX functions (e.g., fopen, strcpy)
 # This is needed when using Clang on Windows with MSVC headers
+# _CRT_SECURE_NO_WARNINGS: Suppress deprecation of strcpy, strncpy, fopen, etc.
+# _CRT_NONSTDC_NO_DEPRECATE: Suppress deprecation of POSIX functions like open, fdopen, close
 if (MSVC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-    add_compile_options(-D_CRT_SECURE_NO_WARNINGS)
+    add_compile_options(-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE)
 endif ()
 
 # Suppress non-portable but intentional extensions and conventions
