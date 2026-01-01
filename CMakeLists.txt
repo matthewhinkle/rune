@@ -4,11 +4,26 @@ project(rune C)
 set(CMAKE_C_STANDARD 23)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-# Suppress macro naming convention warnings across all compilers
+# ================================================================================================
+# Strict compilation flags for security and quality
+# ================================================================================================
+# -Wall: Enable all common warnings
+# -Wextra: Enable additional warnings beyond -Wall
+# -Wpedantic: Warn about non-standard C code (useful for C23 compliance)
+# -Werror: Treat warnings as errors (forces fixes before compilation succeeds)
+if (MSVC)
+    add_compile_options(/W4 /WX)  # W4 = highest warnings, WX = treat as errors
+else ()
+    add_compile_options(-Wall -Wextra -Wpedantic -Werror)
+endif ()
+
+# Suppress non-portable but intentional extensions and conventions
 if (MSVC)
     add_compile_options(/wd4668)  # Undefined preprocessor identifier
 else ()
     add_compile_options(-Wno-reserved-identifier)  # GCC/Clang: macro names like 'scope'
+    add_compile_options(-Wno-gnu-statement-expression-from-macro-expansion)  # GNU statement expressions in macros (intentional)
+    add_compile_options(-Wno-zero-length-array)  # GCC/Clang: zero-length arrays in list/lfq macros (intentional)
 endif ()
 
 # ================================================================================================

@@ -1075,6 +1075,7 @@ static void xxhash64__for_32_byte_threshold__should_use_parallel_processing() {
     const uint64_t h64 = xxhash64(data, 64, 0);
 
     // Assert - hashes should differ (different code paths)
+    CU_ASSERT_NOT_EQUAL(h16, h31); // Below vs just-below threshold
     CU_ASSERT_NOT_EQUAL(h31, h32); // Cross the 32-byte threshold
     CU_ASSERT_NOT_EQUAL(h32, h33);
     CU_ASSERT_NOT_EQUAL(h33, h64);

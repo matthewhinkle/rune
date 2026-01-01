@@ -119,9 +119,9 @@ extern char * R_(str)(const char * restrict data, const str_opt * opt);
 #define strf(first, ...)                                                                                               \
     _Generic(                                                                                                          \
         (first),                                                                                                       \
-        const str_opt *: R_(strf)((const str_opt *)(void *)(first)R_VA_ARGS(__VA_ARGS__)),                            \
-        str_opt *: R_(strf)((const str_opt *)(void *)(first)R_VA_ARGS(__VA_ARGS__)),                                  \
-        default: R_(strf)(&R_STR_OPTS_DEFAULT, (const char *)(void *)(first)R_VA_ARGS(__VA_ARGS__))                   \
+        const str_opt *: R_(strf)((const str_opt *)(void *)(first)R_VA_ARGS(__VA_ARGS__)),                             \
+        str_opt *: R_(strf)((const str_opt *)(void *)(first)R_VA_ARGS(__VA_ARGS__)),                                   \
+        default: R_(strf)(&R_STR_OPTS_DEFAULT, (const char *)(void *)(first)R_VA_ARGS(__VA_ARGS__))                    \
     )
 [[nodiscard]]
 extern char * R_(strf)(const str_opt * opt, const char * fmt, ...);
@@ -136,14 +136,12 @@ extern void str_free_arr(char ** arr);
 // Inspection
 // =====================================================================================================================
 
-#define str_is(data, ...) R_(str_is)((data), R_OPT(&R_STR_OPTS_DEFAULT, __VA_ARGS__))
-extern bool R_(str_is)(const char * s, const str_opt * opt);
+extern bool str_is(const char * s);
 
 #define str_len(data, ...) R_(str_len)((data), R_OPT(&R_STR_OPTS_DEFAULT, __VA_ARGS__))
 extern size_t R_(str_len)(const char * s, const str_opt * opt);
 
-#define str_size(data, ...) R_(str_size)((data), R_OPT(&R_STR_OPTS_DEFAULT, __VA_ARGS__))
-extern size_t R_(str_size)(const char * s, const str_opt * opt);
+extern size_t str_size(const char * s);
 
 #define str_hash(data, ...) R_(str_hash)((data), R_OPT(&R_STR_OPTS_DEFAULT, __VA_ARGS__))
 extern uint64_t R_(str_hash)(const char * s, const str_opt * opt);
@@ -175,9 +173,9 @@ extern const char * R_(str_rfind)(const char * data, const char * target, const 
 #define str_cat(first, ...)                                                                                            \
     _Generic(                                                                                                          \
         (first),                                                                                                       \
-        const str_opt *: R_(str_cat)((const str_opt *)(void *)(first)R_VA_ARGS(__VA_ARGS__)),                         \
-        str_opt *: R_(str_cat)((const str_opt *)(void *)(first)R_VA_ARGS(__VA_ARGS__)),                               \
-        default: R_(str_cat)(&R_STR_OPTS_DEFAULT, (const char *)(void *)(first)R_VA_ARGS(__VA_ARGS__))                \
+        const str_opt *: R_(str_cat)((const str_opt *)(void *)(first)R_VA_ARGS(__VA_ARGS__)),                          \
+        str_opt *: R_(str_cat)((const str_opt *)(void *)(first)R_VA_ARGS(__VA_ARGS__)),                                \
+        default: R_(str_cat)(&R_STR_OPTS_DEFAULT, (const char *)(void *)(first)R_VA_ARGS(__VA_ARGS__))                 \
     )
 [[nodiscard]]
 extern char * R_(str_cat)(const str_opt * opt, const char * first, ...);

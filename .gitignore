@@ -43,3 +43,7 @@ Thumbs.db
 # Env
 .venv/
 .claude/
+
+# CodeQL
+codeql-dbs/
+*.sarif

@@ -315,8 +315,8 @@ static void lfq_push__single_item__should_add_to_queue(void) {
 static void lfq_push__multiple_items__should_add_all(void) {
     LFQ(int) q = lfq(int, 10);
 
-    for (int i = 1; i <= 5; i++) {
-        const int result = lfq_push(&q, i);
+    for (size_t i = 1; i <= 5; i++) {
+        const size_t result = lfq_push(&q, i);
         CU_ASSERT_EQUAL(result, i);
         CU_ASSERT_EQUAL(lfq_depth(&q), i);
     }

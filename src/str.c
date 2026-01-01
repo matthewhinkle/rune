@@ -249,7 +249,7 @@ extern void str_free(const char * s) {
 // Public API: Queries
 // =====================================================================================================================
 
-extern bool R_(str_is)(const char * s, const str_opt * opt) {
+extern bool str_is(const char * s) {
     return rstr_from(s) != nullptr;
 }
 
@@ -259,7 +259,7 @@ extern size_t R_(str_len)(const char * s, const str_opt * opt) {
     return s ? rstr_len(s, opt->max_len) : 0;
 }
 
-extern size_t R_(str_size)(const char * s, const str_opt * opt) {
+extern size_t str_size(const char * s) {
     const rstr * r = rstr_from(s);
     return r ? sizeof(rstr) + r->cap + 2 : 0;
 }

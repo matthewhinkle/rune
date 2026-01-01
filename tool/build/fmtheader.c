@@ -5,11 +5,11 @@
 #include <string.h>
 
 #ifdef _WIN32
-    #include <io.h>
-    #define isatty _isatty
-    #define fileno _fileno
+#include <io.h>
+#define isatty _isatty
+#define fileno _fileno
 #else
-    #include <unistd.h>
+#include <unistd.h>
 #endif
 
 static constexpr int max_line_length = 4096;
@@ -182,7 +182,7 @@ static void format_line(const char * line, char * output) {
     pos = strlen(output);
 
     // Add repeated characters before middle
-    for (int i = 0; i < chars_before; i++) {
+    for (size_t i = 0; i < chars_before; i++) {
         output[pos++] = repeated_char;
     }
 
@@ -193,12 +193,12 @@ static void format_line(const char * line, char * output) {
     // Add repeated characters after middle
     if (second_repeat_pos == -1 && suffix_len > 0) {
         // No second sequence, so add characters before suffix
-        for (int i = 0; i < chars_after; i++) {
+        for (size_t i = 0; i < chars_after; i++) {
             output[pos++] = repeated_char;
         }
     } else {
         // There's a second sequence, use it as part of formatting
-        for (int i = 0; i < chars_after; i++) {
+        for (size_t i = 0; i < chars_after; i++) {
             output[pos++] = repeated_char;
         }
     }

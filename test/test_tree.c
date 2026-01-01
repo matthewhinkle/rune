@@ -860,11 +860,11 @@ static void rbt_insert__for_mixed_insertion_pattern__should_maintain_all_invaria
     // Arrange
     // Insert in pattern: 50, 25, 75, 12, 37, 62, 87, 6, 18, 31
     RBT(int) tree = rbt(int);
-    int values[] = {50, 25, 75, 12, 37, 62, 87, 6, 18, 31};
-    int count = sizeof(values) / sizeof(values[0]);
+    const int values[] = {50, 25, 75, 12, 37, 62, 87, 6, 18, 31};
+    constexpr size_t count = sizeof(values) / sizeof(values[0]);
 
     // Act
-    for (int i = 0; i < count; i++) {
+    for (size_t i = 0; i < count; i++) {
         rbt_insert(&tree, values[i]);
     }
 
@@ -878,7 +878,7 @@ static void rbt_insert__for_mixed_insertion_pattern__should_maintain_all_invaria
     CU_ASSERT(rbt_tree_check_bst(tree.root, INT_MIN, INT_MAX));
 
     // All values present
-    for (int i = 0; i < count; i++) {
+    for (size_t i = 0; i < count; i++) {
         CU_ASSERT(rbt_tree_contains(tree.root, values[i]));
     }
     CU_ASSERT_EQUAL(rbt_tree_count_nodes(tree.root), count);

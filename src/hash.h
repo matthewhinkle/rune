@@ -134,6 +134,7 @@ static uint64_t hash_mix(uint64_t x) {
 
 // ---------------------------------------------- Floating-point hashing -----------------------------------------------
 
+[[maybe_unused]]
 static uint64_t hash_float(float x) {
     if (x == 0.0f)
         x = 0.0f; // Normalize -0.0 to +0.0
@@ -142,6 +143,7 @@ static uint64_t hash_float(float x) {
     return hash_mix(b);
 }
 
+[[maybe_unused]]
 static uint64_t hash_double(double x) {
     if (x == 0.0)
         x = 0.0; // Normalize -0.0 to +0.0
@@ -156,12 +158,14 @@ static uint64_t hash_double(double x) {
 
 // ------------------------------------------------ Hash128 operations -------------------------------------------------
 
+[[maybe_unused]]
 static bool hash128_eq(const hash128_t a, const hash128_t b) {
     return a.h1 == b.h1 && a.h2 == b.h2;
 }
 
 // -------------------------------------------------- Hash combining ---------------------------------------------------
 
+[[maybe_unused]]
 static uint64_t hash_combine(const uint64_t h1, const uint64_t h2) {
     return h1 ^ (h2 + 0x9E3779B97F4A7C15ULL + (h1 << 6) + (h1 >> 2));
 }

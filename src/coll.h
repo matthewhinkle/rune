@@ -11,8 +11,7 @@
  *
  *   List API
  *   -------------------------------------------------------------------------------------------------------------------
- *   list(type, ...)          Create list with initial values
- *   list_empty(type)         Create empty list (stack-allocated)
+ *   list(type, ...)          Create list (with optional initial values)
  *   list_free(lst)           Free list memory
  *   list_get(lst, idx)       Get element at index
  *   list_add(lst, item)      Append item to end
@@ -38,7 +37,7 @@
  * Example:
  *   // List usage
  *   typedef struct { int x; } Point;
- *   struct { Point * data; size_t size; size_t capacity; } lst = list_empty(Point);
+ *   LIST(Point) lst = list(Point);
  *   list_add(&lst, (Point){1, 2});
  *   list_add(&lst, (Point){3, 4});
  *   Point p = list_get(&lst, 0);  // {1, 2}
@@ -77,8 +76,6 @@
 
 #define list(type, ...) R_LIST_OF(type)((type[]){__VA_ARGS__}, sizeof((type[]){__VA_ARGS__}) / sizeof(type))
 
-#define list_empty(type) {.data = nullptr, .size = 0, .capacity = 0}
-
 #define list_free(lst)                                                                                                 \
     ({                                                                                                                 \
         if ((lst) != nullptr) {                                                                                        \
@@ -98,7 +95,7 @@
     ({                                                                                                                 \
         assert((lst) != nullptr);                                                                                      \
         assert((lst)->data != nullptr);                                                                                \
-        assert((idx) < (lst)->size);                                                                                   \
+        assert((size_t)(idx) < (lst)->size);                                                                           \
         (lst)->data[(idx)];                                                                                            \
     })
 
@@ -200,7 +197,7 @@ typedef struct {
 } LIST(T);
 
 static LIST(T) R_LIST_OF(T)(const T * items, size_t count) {
-    LIST(T) lst = list_empty(T);
+    LIST(T) lst = {.data = nullptr, .size = 0, .capacity = 0};
     for (size_t i = 0; i < count; i++) {
         list_add(&lst, items[i]);
     }
@@ -341,6 +338,7 @@ typedef struct {
     R_Atomic(size_t) tail;
 } LFQ(T);
 
+[[maybe_unused]]
 static LFQ(T) R_LFQ_OF(T)(size_t capacity, const T * items, size_t count) {
     LFQ(T)
     q = {.data = mem_alloc_zero(capacity * sizeof(T)), .capacity = capacity, .head = 0, .tail = 0};
