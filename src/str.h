@@ -103,6 +103,7 @@ static constexpr size_t R_STR_MAX_VARG = 64;
 [[maybe_unused]]
 static constexpr size_t R_STR_MAX_TOK = RCFG__STR_MAX_TOK;
 #else  // RCFG__STR_MAX_VARG
+// codeql[cpp/dead-store]
 [[maybe_unused]]
 static constexpr size_t R_STR_MAX_TOK = 64;
 #endif // RCFG__STR_MAX_TOK
