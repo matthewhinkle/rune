@@ -1,11 +1,14 @@
 #ifndef RUNE_TEST_H
 #define RUNE_TEST_H
 
-#include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
+
+#ifndef _WIN32
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#endif
 
 #define ADD_TEST(suite, test_func)                                                                                     \
     if (NULL == CU_add_test(suite, #test_func, test_func)) {                                                           \
