@@ -12,18 +12,18 @@
 #include <unistd.h>
 #endif
 
-static constexpr int max_line_length = 4096;
-static constexpr int batch_size = 256;
-static constexpr int target_length = 120;
+[[maybe_unused]] static constexpr int max_line_length = 4096;
+[[maybe_unused]] constexpr int batch_size = 256;
+[[maybe_unused]] constexpr int target_length = 120;
 
 // Static buffers for batch processing (no malloc needed!)
 static char line_buffers[batch_size][max_line_length];
 static char formatted_buffers[batch_size][max_line_length];
 
 // ANSI color codes
-static const char color_reset[] = "\033[0m";
-static const char color_green_bold[] = "\033[32m\033[1m";
-static const char color_red_bold[] = "\033[31m\033[1m";
+[[maybe_unused]] constexpr char color_reset[] = "\033[0m";
+[[maybe_unused]] constexpr char color_green_bold[] = "\033[32m\033[1m";
+[[maybe_unused]] constexpr char color_red_bold[] = "\033[31m\033[1m";
 
 /**
  * Check if the output supports colored text (isatty).
