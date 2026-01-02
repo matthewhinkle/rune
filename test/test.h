@@ -8,10 +8,10 @@
 #include "CUnit/Basic.h"
 #include <stdio.h>
 
-#define ADD_TEST(suite, test_func)                                                                 \
-    if (NULL == CU_add_test(suite, #test_func, test_func)) {                                       \
-        CU_cleanup_registry();                                                                     \
-        return CU_get_error();                                                                     \
+#define ADD_TEST(suite, test_func)                                                                                     \
+    if (NULL == CU_add_test(suite, #test_func, test_func)) {                                                           \
+        CU_cleanup_registry();                                                                                         \
+        return CU_get_error();                                                                                         \
     }
 
 /**
@@ -23,7 +23,10 @@ static inline FILE * open_null_stream(void) {
 #ifdef _WIN32
     return fopen("NUL", "w");
 #else
-    return fopen("/dev/null", "w");  // codeql [cpp/world-writable-file-creation] - /dev/null is a system device, not a created file
+    return fopen(
+        "/dev/null",
+        "w"
+    ); // codeql [cpp/world-writable-file-creation] - /dev/null is a system device, not a created file
 #endif
 }
 

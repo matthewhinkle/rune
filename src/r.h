@@ -92,7 +92,7 @@
 // Usage: R_OPT(&default_opt, /* optional: &custom_opt */)
 // - No variadic args: returns def
 // - With variadic args: returns first variadic arg
-#define R_OPT(def, ...) R_OPT_PICK(__VA_ARGS__ __VA_OPT__(,) def)
+#define R_OPT(def, ...) R_OPT_PICK(__VA_ARGS__ __VA_OPT__(, ) def)
 
 // -------------------------------------------- Scope and allocator macros ---------------------------------------------
 // These macros implement RAII-style resource management using push/pop semantics.

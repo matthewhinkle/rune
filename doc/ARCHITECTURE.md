@@ -32,7 +32,8 @@ rune/
 
 ### Module Layout
 
-All core modules are located directly in `src/` for simplicity. As the library grows, domain-specific modules can be organized into subdirectories while maintaining the same include pattern.
+All core modules are located directly in `src/` for simplicity. As the library grows, domain-specific modules can be
+organized into subdirectories while maintaining the same include pattern.
 
 ### Include Paths
 
@@ -144,7 +145,8 @@ alloc_scope(allocator) { ... }  // Automatically push/pop allocator
 
 #### `str.h` / `str.c`
 
-Managed string handling with efficient hashing and UTF-8 support. Strings are stored with metadata including length, capacity, and cached hash value.
+Managed string handling with efficient hashing and UTF-8 support. Strings are stored with metadata including length,
+capacity, and cached hash value.
 
 **Features:**
 
@@ -173,13 +175,15 @@ str_free(s);
 
 #### `coll.h`
 
-Generic collections using the C "include trick" with `#ifdef T` pattern. Define a type macro `T` before including to instantiate a collection type.
+Generic collections using the C "include trick" with `#ifdef T` pattern. Define a type macro `T` before including to
+instantiate a collection type.
 
 **Collections:**
 
 - **`LIST(T)`** — Dynamic array with automatic growth, shrinking, and element access
-  - Operations: `list()` (constructor), `list_add()`, `list_insert()`, `list_remove()`, `list_get()`, `list_resize()`, `list_grow()`, `list_shrink()`, `list_free()`
-  - Automatic capacity doubling on overflow, halving on underutilization
+    - Operations: `list()` (constructor), `list_add()`, `list_insert()`, `list_remove()`, `list_get()`, `list_resize()`,
+      `list_grow()`, `list_shrink()`, `list_free()`
+    - Automatic capacity doubling on overflow, halving on underutilization
 
 **Usage Pattern:**
 
@@ -255,13 +259,13 @@ add_dependencies(rune run_tests)
 
 ### Dependencies
 
-| Dependency | Purpose               | Version |
-|------------|-------------------------|---------|
-| SDL3       | Graphics/windowing    | Latest  |
-| Vulkan     | Graphics rendering    | Latest  |
-| CUnit      | Unit testing          | 2.x     |
-| Python3    | Build utilities       | 3.x     |
-| C standard | Core functionality    | C23     |
+| Dependency | Purpose            | Version |
+|------------|--------------------|---------|
+| SDL3       | Graphics/windowing | Latest  |
+| Vulkan     | Graphics rendering | Latest  |
+| CUnit      | Unit testing       | 2.x     |
+| Python3    | Build utilities    | 3.x     |
+| C standard | Core functionality | C23     |
 
 ## Design Principles
 

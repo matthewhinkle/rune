@@ -5,6 +5,7 @@ The `r_test.h` header provides test-only access to internal runtime structures f
 ## When to Use r_test.h
 
 Use `r_test.h` instead of `r.h` in test files when you need to:
+
 - Access internal allocator stack state for validation
 - Mock or override allocators in tests
 - Verify allocator push/pop behavior

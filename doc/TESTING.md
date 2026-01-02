@@ -111,6 +111,7 @@ static void test_str_null_input() { ... }
 **Important:** Create one dedicated CUnit test suite per function/macro being tested.
 
 Each suite should be:
+
 - Named after the function it tests (e.g., `"str()"`, `"strf()"`)
 - Created with a unique suite variable (e.g., `suite_str`, `suite_strf`)
 - Registered in `main()` with proper error handling
@@ -124,6 +125,7 @@ CU_pSuite suite_str_len = CU_add_suite("str_len()", nullptr, nullptr);
 ```
 
 This organization provides:
+
 - Clear separation of tests by function
 - Better test reporting (suite name indicates which function is being tested)
 - Easier navigation and debugging
@@ -279,6 +281,7 @@ cmake --build . --target run_tests
 ### Build System Integration
 
 The CMake build system automatically:
+
 - Compiles all test executables (`test_r`, `test_coll`, `test_str`)
 - Runs tests as part of the build process (via `run_tests` target)
 - Links tests with CUnit library

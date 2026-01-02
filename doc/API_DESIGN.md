@@ -8,7 +8,7 @@ This document outlines the core API patterns and philosophy used throughout the 
 
 | Prefix | Scope    | Usage                                          |
 |--------|----------|------------------------------------------------|
-| `R_`   | Internal | Uppercase macros, constants, and type adapters|
+| `R_`   | Internal | Uppercase macros, constants, and type adapters |
 | `r_`   | Internal | Internal function implementations (use `R_()`) |
 | (none) | Public   | All public APIs use module-based naming        |
 
@@ -64,7 +64,8 @@ json_parse()   json_get()     json_free()
 
 ## Allocator Interface
 
-The allocator provides a customizable interface for system-level memory operations. This allows users to provide custom allocators (arena, pool, tracking, etc.).
+The allocator provides a customizable interface for system-level memory operations. This allows users to provide custom
+allocators (arena, pool, tracking, etc.).
 
 ### Structure
 
@@ -90,7 +91,8 @@ typedef struct {
 
 ### Usage
 
-Allocators are managed via a stack-based interface. The default allocator (malloc/realloc/free) is automatically used when no custom allocator is active. Use `alloc_scope()` for automatic push/pop.
+Allocators are managed via a stack-based interface. The default allocator (malloc/realloc/free) is automatically used
+when no custom allocator is active. Use `alloc_scope()` for automatic push/pop.
 
 ```c
 // Default allocator - uses malloc/realloc/free
@@ -124,10 +126,14 @@ alloc_pop();  // Restore previous allocator
 
 ### Design Philosophy
 
-- **Fail-fast on allocation failure** — Allocators assert when unable to fulfill requests. Programming errors should crash immediately, not silently fail.
-- **No error codes** — The allocator interface doesn't report errors. If allocation fails, the program terminates. This keeps APIs clean.
-- **Stack-based scoping** — Custom allocators are pushed/popped like a stack, enabling nested allocators and automatic cleanup.
-- **Stateful allocators** — The `ctx` field supports stateful allocators like arenas, object pools, or memory tracking systems.
+- **Fail-fast on allocation failure** — Allocators assert when unable to fulfill requests. Programming errors should
+  crash immediately, not silently fail.
+- **No error codes** — The allocator interface doesn't report errors. If allocation fails, the program terminates. This
+  keeps APIs clean.
+- **Stack-based scoping** — Custom allocators are pushed/popped like a stack, enabling nested allocators and automatic
+  cleanup.
+- **Stateful allocators** — The `ctx` field supports stateful allocators like arenas, object pools, or memory tracking
+  systems.
 
 ## Polymorphic Macros with `_Generic`
 
@@ -364,6 +370,7 @@ str("data");  // ⚠️ Warning: ignoring return value marked nodiscard
 ### Deallocation
 
 Each module provides free functions that:
+
 - Accept `nullptr` safely (no-op)
 - Handle cleanup of module-specific metadata
 - Don't require a return value assignment
@@ -379,7 +386,8 @@ list_free(&lst);          // Free list in-place
 
 ### Allocator Consistency
 
-Objects must be freed using the same allocator they were allocated with. The active allocator at free time should match the allocator at allocation time:
+Objects must be freed using the same allocator they were allocated with. The active allocator at free time should match
+the allocator at allocation time:
 
 ```c
 allocator arena = arena_create(4096);

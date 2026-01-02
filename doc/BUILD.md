@@ -8,14 +8,14 @@ This document describes the build system, dependencies, and how to build and tes
 
 - **C23 compiler** — GCC 14+, Clang 18+, or newer
 - C23 features required:
-  - `nullptr` — Null pointer constant
-  - `_Generic` — Type-based dispatch in macros
-  - `typeof`/`typeof_unqual` — Type inference
-  - `auto` — Type inference for locals
-  - `__VA_OPT__` — Conditional variadic expansion
-  - `[[nodiscard]]` — Attribute to enforce result usage
-  - `constexpr` — Compile-time constants
-  - `_Thread_local` — Thread-local storage
+    - `nullptr` — Null pointer constant
+    - `_Generic` — Type-based dispatch in macros
+    - `typeof`/`typeof_unqual` — Type inference
+    - `auto` — Type inference for locals
+    - `__VA_OPT__` — Conditional variadic expansion
+    - `[[nodiscard]]` — Attribute to enforce result usage
+    - `constexpr` — Compile-time constants
+    - `_Thread_local` — Thread-local storage
 
 ### Build Tools
 
@@ -27,18 +27,19 @@ This document describes the build system, dependencies, and how to build and tes
 
 ### Required
 
-| Package | Version | Purpose             | Link |
-|---------|---------|---------------------|------|
-| CUnit   | 2.x+    | Unit testing        | http://cunit.sourceforge.net/ |
+| Package | Version | Purpose      | Link                          |
+|---------|---------|--------------|-------------------------------|
+| CUnit   | 2.x+    | Unit testing | http://cunit.sourceforge.net/ |
 
 ### Optional (for main executable)
 
-| Package | Version | Purpose              | Link |
-|---------|---------|----------------------|------|
-| SDL3    | Latest  | Graphics/windowing   | https://www.libsdl.org/ |
-| Vulkan  | Latest  | Graphics rendering   | https://www.vulkan.org/ |
+| Package | Version | Purpose            | Link                    |
+|---------|---------|--------------------|-------------------------|
+| SDL3    | Latest  | Graphics/windowing | https://www.libsdl.org/ |
+| Vulkan  | Latest  | Graphics rendering | https://www.vulkan.org/ |
 
-**Note:** SDL3 and Vulkan are only required for the main rune executable. The core library (`r.h`, `str.h`, `coll.h`) has no external dependencies beyond C23.
+**Note:** SDL3 and Vulkan are only required for the main rune executable. The core library (`r.h`, `str.h`, `coll.h`)
+has no external dependencies beyond C23.
 
 ## Installation
 
@@ -180,6 +181,7 @@ cmake --build .
 ### CMakeLists.txt Structure
 
 The build system:
+
 1. Finds required packages (CUnit, Python3, optional: SDL3, Vulkan)
 2. Normalizes header formatting (Python script)
 3. Builds main executable with all core modules
@@ -208,6 +210,7 @@ The library supports compile-time configuration via preprocessor macros. Define 
 ```
 
 Default values:
+
 - `RCFG__ERROR_STACK_MAX` — 8
 - `RCFG__ALLOC_STACK_MAX` — 16
 - `RCFG__STR_MAX_LEN` — 4096
@@ -233,30 +236,36 @@ cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS="-O3" ..
 ### CMake Configuration Errors
 
 **Error: "Could not find CUnit"**
+
 - Install CUnit: See [Installation](#installation) section
 - Or provide manual path: `cmake -DCUNIT_DIR=/path/to/cunit ..`
 
 **Error: "Could not find SDL3/Vulkan"**
+
 - These are optional; the core library builds without them
 - For main executable, install SDL3 and Vulkan headers
 
 ### Build Errors
 
 **"C23 features not supported"**
+
 - Upgrade your compiler to GCC 14+ or Clang 18+
 - Update cmake compiler: `export CC=gcc-14` or `export CC=clang-18`
 
 **"undefined reference to `_Thread_local`"**
+
 - Ensure C23 standard is set: Check CMakeLists.txt has `set(CMAKE_C_STANDARD 23)`
 - Upgrade compiler if still failing
 
 ### Test Failures
 
 **Tests fail immediately with "undefined symbol"**
+
 - Ensure all source files are linked in CMakeLists.txt
 - Rebuild with `cmake --build . --clean-first`
 
 **Memory errors in tests**
+
 - Run with Valgrind to detect leaks: `valgrind --leak-check=full ./test_r`
 - Run with ASAN: `cmake -DCMAKE_C_FLAGS="-fsanitize=address" ..`
 

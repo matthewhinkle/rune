@@ -4,7 +4,8 @@ Experimental tools for the Rune project. Not intended for production use yet.
 
 ## fmtheader
 
-Normalizes those decorative `===` and `---` header lines in your source files to a consistent 120 characters. One less thing to micromanage.
+Normalizes those decorative `===` and `---` header lines in your source files to a consistent 120 characters. One less
+thing to micromanage.
 
 ### What It Does
 
@@ -17,6 +18,7 @@ Normalizes those decorative `===` and `---` header lines in your source files to
 ### Building
 
 The tool is built automatically when you rebuild your CMake project in CLion:
+
 - Right-click project → CMake → Build All
 - Or use Build → Build Project
 
@@ -44,6 +46,7 @@ Examples:
 ### Example Transformations
 
 Before:
+
 ```c
 // --- Type Definitions ---
 // ====================================
@@ -51,6 +54,7 @@ Before:
 ```
 
 After (all normalized to 120 characters):
+
 ```c
 // --- Type Definitions ---
 // ============================================================
