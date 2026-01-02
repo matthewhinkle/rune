@@ -76,22 +76,36 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 #ifdef RCFG__STR_MAX_LEN
+[[maybe_unused]]
 static constexpr size_t R_STR_MAX_LEN = RCFG__STR_MAX_LEN;
 #else  // RCFG__STR_MAX_LEN
+[[maybe_unused]]
 static constexpr size_t R_STR_MAX_LEN = 4096;
 #endif // RCFG__STR_MAX_LEN
 
 #ifdef RCFG__STR_STACK_MAX
+[[maybe_unused]]
 static constexpr size_t R_STR_STACK_MAX = RCFG__STR_STACK_MAX;
 #else  // RCFG__STR_STACK_MAX
+[[maybe_unused]]
 static constexpr size_t R_STR_STACK_MAX = 8 * 1024;
 #endif // RCFG__STR_STACK_MAX
 
 #ifdef RCFG__STR_MAX_VARG
+[[maybe_unused]]
 static constexpr size_t R_STR_MAX_VARG = RCFG__STR_MAX_VARG;
 #else  // RCFG__STR_MAX_VARG
+[[maybe_unused]]
 static constexpr size_t R_STR_MAX_VARG = 64;
 #endif // RCFG__STR_MAX_VARG
+
+#ifdef RCFG__STR_MAX_TOK
+[[maybe_unused]]
+static constexpr size_t R_STR_MAX_TOK = RCFG__STR_MAX_TOK;
+#else  // RCFG__STR_MAX_VARG
+[[maybe_unused]]
+static constexpr size_t R_STR_MAX_TOK = 64;
+#endif // RCFG__STR_MAX_TOK
 
 // String options structure
 // ---------------------------------------------------------------------------------------------------------------------
@@ -103,6 +117,7 @@ typedef struct {
 
 static const str_opt R_STR_OPTS_DEFAULT = {
     .max_len = R_STR_MAX_LEN,
+    .max_tok = R_STR_MAX_TOK,
 };
 
 // =====================================================================================================================

@@ -620,7 +620,7 @@ extern char ** R_(str_split)(const char * s, const char * delim, const str_opt *
         return nullptr;
 
     const size_t max_len = opt->max_len;
-    const size_t max_tokens = opt->max_tok > 0 ? opt->max_tok : R_STR_MAX_VARG;
+    const size_t max_tokens = opt->max_tok;
     const size_t s_len = rstr_len(s, max_len);
     const size_t d_len = rstr_len(delim, max_len);
 
