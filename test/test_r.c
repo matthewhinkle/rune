@@ -6,6 +6,13 @@
 #include "CUnit/Basic.h"
 #include "test.h"
 
+// CUnit's macro casts function pointers to void*, which violates strict ISO C
+// MinGW's GCC is stricter about this on Windows, so we suppress it there
+#ifdef _WIN32
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+#endif
+
 // Test-only access to internal allocator state
 extern _Thread_local struct {
     allocator stack[mem_alloc_STACK_MAX];
@@ -882,3 +889,7 @@ int main(void) {
     CU_cleanup_registry();
     return CU_get_error();
 }
+
+#ifdef _WIN32
+#pragma GCC diagnostic pop
+#endif
